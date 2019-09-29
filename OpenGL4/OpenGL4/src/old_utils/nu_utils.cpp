@@ -53,6 +53,72 @@ GLFWwindow* init_window(int width, int height)
 		exit(-1);
 	}
 
+
+	return window;
+}
+
+/* By providing this callback, Opengl4.3 messages will not appear in the log. */
+static void APIENTRY openGLErrorCallback_4_3(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+	auto typeToText = [](GLenum type)
+	{
+		switch (type)
+		{
+			case GL_DEBUG_TYPE_ERROR: return "GL_DEBUG_TYPE_ERROR";
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR";
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR";
+			case GL_DEBUG_TYPE_PORTABILITY: return "GL_DEBUG_TYPE_PORTABILITY";
+			case GL_DEBUG_TYPE_PERFORMANCE: return "GL_DEBUG_TYPE_PERFORMANCE";
+			default: return "unknown type string";
+		}
+	};
+
+	auto severityToText = [](GLenum severity)
+	{
+		switch (severity)
+		{
+			case GL_DEBUG_SEVERITY_HIGH: return "GL_DEBUG_SEVERITY_HIGH";
+			case GL_DEBUG_SEVERITY_MEDIUM: return "GL_DEBUG_SEVERITY_MEDIUM";
+			case GL_DEBUG_SEVERITY_LOW: return "GL_DEBUG_SEVERITY_LOW";
+			case GL_DEBUG_SEVERITY_NOTIFICATION: return "GL_DEBUG_SEVERITY_NOTIFICATION";
+			default: return "unknown";
+		}
+	};
+
+	if (type == GL_DEBUG_TYPE_ERROR || type == GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR || type == GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR || type == GL_DEBUG_TYPE_PORTABILITY || type == GL_DEBUG_TYPE_PERFORMANCE)
+	{
+		std::cout << "OpenGL Error : " << message << std::endl;
+		std::cout << "source : " << source << "\ttype : " << typeToText(type) << "\tid : " << id << "\tseverity : " << severityToText(severity) << std::endl;
+	}
+}
+
+
+GLFWwindow* init_window_4_6(int width, int height)
+{
+	glfwInit();
+	glfwSetErrorCallback([](int errorCode, const char* errorDescription) {std::cout << "GLFW error : " << errorCode << " : " << errorDescription << std::endl; });
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+	GLFWwindow* window = glfwCreateWindow(width, height, "OpenglContext", nullptr, nullptr);
+	if (!window)
+	{
+		std::cerr << "failed to create window" << std::endl;
+		exit(-1);
+	}
+	glfwMakeContextCurrent(window);
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cerr << "failed to initialize glad with processes " << std::endl;
+		exit(-1);
+	}
+
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(&openGLErrorCallback_4_3, nullptr);
+
 	return window;
 }
 

@@ -100,11 +100,12 @@ namespace
 		int width = 800;
 		int height = 600;
 
-		GLFWwindow* window = init_window(width, height);
+		GLFWwindow* window = init_window_4_6(width, height);
 
 		glViewport(0, 0, width, height);
 		glfwSetFramebufferSizeCallback(window, [](GLFWwindow*window, int width, int height) {  glViewport(0, 0, width, height); });
 		camera.exclusiveGLFWCallbackRegister(window);
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		//LOAD BACKGROUND TEXTURE
 		int img_width, img_height, img_nrChannels;
@@ -114,14 +115,10 @@ namespace
 			std::cerr << "failed to load texture" << std::endl;
 			exit(-1);
 		}
-		stbi_set_flip_vertically_on_load(true);
-
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-		GLuint textureBackgroundId;
-		glGenTextures(1, &textureBackgroundId);
+		GLuint textureRocksId;
+		glGenTextures(1, &textureRocksId);
 		glActiveTexture(GL_TEXTURE0); //set this to the first texture unit
-		glBindTexture(GL_TEXTURE_2D, textureBackgroundId);
+		glBindTexture(GL_TEXTURE_2D, textureRocksId);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img_width, img_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
@@ -130,17 +127,16 @@ namespace
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		stbi_image_free(textureData);
 
-		//LOAD FACE TEXTURE
 		textureData = stbi_load("Textures/Grass2.png", &img_width, &img_height, &img_nrChannels, 0);
 		if (!textureData)
 		{
 			std::cerr << "failed to load texture" << std::endl;
 			exit(-1);
 		}
-		GLuint textureFaceId;
-		glGenTextures(1, &textureFaceId);
+		GLuint textureGrassId;
+		glGenTextures(1, &textureGrassId);
 		glActiveTexture(GL_TEXTURE0 + 1); //2nd texture unit
-		glBindTexture(GL_TEXTURE_2D, textureFaceId);
+		glBindTexture(GL_TEXTURE_2D, textureGrassId);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img_width, img_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
@@ -246,13 +242,12 @@ namespace
 		postprocessShader.use();
 		postprocessShader.setUniform1i("screencapture", 0);
 
-
-		Shader shader(vertex_shader_src, frag_shader_src, false);
-		shader.use();
+		Shader drawShader(vertex_shader_src, frag_shader_src, false);
+		drawShader.use();
 
 		//inform shader which texture units that its samplers should be bound to
-		shader.setUniform1i("texture0", 0); //binds sampler "texture0" to texture unit GL_TEXTURE0
-		shader.setUniform1i("texture1", 1); // "												"
+		drawShader.setUniform1i("texture0", 0); //binds sampler "texture0" to texture unit GL_TEXTURE0
+		drawShader.setUniform1i("texture1", 1); // "												"
 
 		glEnable(GL_DEPTH_TEST);
 
@@ -285,20 +280,11 @@ namespace
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_Texture_ColorAttachment, 0); //last argument is mipmap level
 
-		//option A: use plain-old textures for depth and stencil buffers
-		GLuint fbo_Texture_DepthStencilTexture; //this is actually less performant than using a renderbuffer (it is in opengl's native dataformat). 
-		glGenTextures(1, &fbo_Texture_DepthStencilTexture);
-		glBindBuffer(GL_TEXTURE_2D, fbo_Texture_DepthStencilTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, nullptr);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, fbo_Texture_DepthStencilTexture, 0);
-		//you can also attach separate depth/stencil buffers with GL_DEPTH_ATTACHEMENT (texture format GL_DEPTH_COMPONENT_ and GL_STENCIL_ATTACHMENT (texture format is GL_STENCIL_INDEX)
-
-		//option B: use the faster renderbuffers (OpenGL native render format) for depth and stencil buffers (these cannot easily be read from, but can be used in depth/stenci tests)
 		GLuint fbo_RenderBufferObject_DepthStencil;
 		glGenRenderbuffers(1, &fbo_RenderBufferObject_DepthStencil);
 		glBindRenderbuffer(GL_RENDERBUFFER, fbo_RenderBufferObject_DepthStencil);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fbo_RenderBufferObject_DepthStencil); //this overwrites what we set up in option A
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fbo_RenderBufferObject_DepthStencil); 
 		glBindRenderbuffer(GL_RENDERBUFFER, 0); //unbind the render buffer
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -322,15 +308,15 @@ namespace
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			shader.use();
+			drawShader.use();
 
 			//set texture unit 0 to be the background
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, textureBackgroundId);
+			glBindTexture(GL_TEXTURE_2D, textureRocksId);
 
 			//set texture unit 1 to be face
 			glActiveTexture(GL_TEXTURE0 + 1);
-			glBindTexture(GL_TEXTURE_2D, textureFaceId);
+			glBindTexture(GL_TEXTURE_2D, textureGrassId);
 
 			glm::mat4 view = camera.getView();
 			glm::mat4 projection = glm::perspective(glm::radians(FOV), static_cast<float>(width) / height, 0.1f, 100.0f);
@@ -342,10 +328,9 @@ namespace
 				model = glm::translate(model, cubePositions[i]);
 				model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 
-
-				shader.setUniformMatrix4fv("model", 1, GL_FALSE, glm::value_ptr(model));
-				shader.setUniformMatrix4fv("view", 1, GL_FALSE, glm::value_ptr(view));  //since we don't update for each cube, it would be more efficient to do this outside of the loop.
-				shader.setUniformMatrix4fv("projection", 1, GL_FALSE, glm::value_ptr(projection));
+				drawShader.setUniformMatrix4fv("model", 1, GL_FALSE, glm::value_ptr(model));
+				drawShader.setUniformMatrix4fv("view", 1, GL_FALSE, glm::value_ptr(view));  //since we don't update for each cube, it would be more efficient to do this outside of the loop.
+				drawShader.setUniformMatrix4fv("projection", 1, GL_FALSE, glm::value_ptr(projection));
 
 				glBindVertexArray(vao);
 				glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -381,12 +366,12 @@ namespace
 		//framebuffer related
 		glDeleteFramebuffers(1, &framebufferObject);
 		glDeleteTextures(1, &fbo_Texture_ColorAttachment);
-		glDeleteTextures(1, &fbo_Texture_DepthStencilTexture);
+		//glDeleteTextures(1, &fbo_Texture_DepthStencilTexture);
 		glDeleteRenderbuffers(1, &fbo_RenderBufferObject_DepthStencil);
 	}
 }
 
-//int main()
-//{
-//	true_main();
-//}
+int main()
+{
+	true_main();
+}

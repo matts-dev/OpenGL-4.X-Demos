@@ -11,5 +11,6 @@ void verifyShaderCompiled(const char* shadername, GLuint shader);
 void verifyShaderLink(GLuint shaderProgram);
 
 GLFWwindow* init_window(int width, int height);
+GLFWwindow* init_window_4_6(int width, int height);
 
 GLuint textureLoader(const char* relative_filepath, int texture_unit = -1, bool useGammaCorrection = false);

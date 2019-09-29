@@ -1,1 +1,11 @@
-{\rtf1}
+
+DISCLAIMER - these are old utilities I created years ago and contain some bad practices;
+leaving as is so I can copy and paste old demos into this new 4.6 repo.
+
+
+NOTE: copying form old repo uses an older version of glm; be sure to search for all glm::mat4 and mat4 and replace all default-constructed
+matrices to be glm::mat4(1.0f); instead of glm::mat4();. The newer versions of glm do not default construct to an identiy matrix. 
+
+
+
+
