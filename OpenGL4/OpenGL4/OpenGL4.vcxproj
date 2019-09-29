@@ -129,8 +129,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="includes\glm\detail\glm.cpp" />
+    <ClCompile Include="src\demos\from_3.3_demos\render_to_texture.cpp" />
     <ClCompile Include="src\demos\error_callbacks.cpp" />
+    <ClCompile Include="src\old_utils\CameraFPS.cpp" />
+    <ClCompile Include="src\old_utils\nu_utils.cpp" />
+    <ClCompile Include="src\old_utils\Shader.cpp" />
+    <ClCompile Include="src\old_utils\Texture2D.cpp" />
+    <ClCompile Include="src\old_utils\Utilities.cpp" />
     <ClCompile Include="third_party_src\glad.c" />
+    <ClCompile Include="third_party_src\stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="static_lib\glfw3.lib" />
@@ -382,6 +389,11 @@
     <ClInclude Include="includes\glm\vector_relational.hpp" />
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
+    <ClInclude Include="src\old_utils\CameraFPS.h" />
+    <ClInclude Include="src\old_utils\nu_utils.h" />
+    <ClInclude Include="src\old_utils\Shader.h" />
+    <ClInclude Include="src\old_utils\Texture2D.h" />
+    <ClInclude Include="src\old_utils\Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="includes\glm\detail\func_common.inl" />
