@@ -48,6 +48,9 @@
     <ClCompile Include="src\demos\compute_shaders\basic_compute_shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\demos\compute_shaders\simple_render_to_texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="static_lib\glfw3.lib" />

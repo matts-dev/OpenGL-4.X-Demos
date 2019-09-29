@@ -130,6 +130,7 @@
   <ItemGroup>
     <ClCompile Include="includes\glm\detail\glm.cpp" />
     <ClCompile Include="src\demos\compute_shaders\basic_compute_shader.cpp" />
+    <ClCompile Include="src\demos\compute_shaders\simple_render_to_texture.cpp" />
     <ClCompile Include="src\demos\from_3.3_demos\render_to_texture.cpp" />
     <ClCompile Include="src\demos\error_callbacks.cpp" />
     <ClCompile Include="src\old_utils\CameraFPS.cpp" />
