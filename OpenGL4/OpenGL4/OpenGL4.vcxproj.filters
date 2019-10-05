@@ -45,10 +45,10 @@
     <ClCompile Include="third_party_src\stb_image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\demos\compute_shaders\basic_compute_shader.cpp">
+    <ClCompile Include="src\demos\compute_shaders\0.0 simple_render_to_texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\demos\compute_shaders\simple_render_to_texture.cpp">
+    <ClCompile Include="src\demos\compute_shaders\0.1 basic_compute_shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
