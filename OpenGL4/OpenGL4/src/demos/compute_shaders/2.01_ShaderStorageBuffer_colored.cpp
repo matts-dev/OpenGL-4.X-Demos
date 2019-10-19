@@ -85,8 +85,8 @@ namespace
 
 	void true_main()
 	{
-		int width = 800;
-		int height = 600;
+		int width = 1200;
+		int height = 900;
 
 		glfwInit();
 		glfwSetErrorCallback([](int errorCode, const char* errorDescription) {std::cout << "GLFW error : " << errorCode << " : " << errorDescription << std::endl; });
@@ -159,7 +159,7 @@ namespace
 		// Random Number Generator
 		////////////////////////////////////////////////////////
 		std::random_device rng;
-		std::seed_seq seed{ 28, 7, 9, 3, 101};
+		std::seed_seq seed{ 28, 7, 9, 3, 101 };
 		std::mt19937 rng_eng = std::mt19937(seed);
 		std::uniform_real_distribution<float> ndcDist(-1.f, 1.f); //[a, b)
 		std::uniform_real_distribution<float> attractionDist(0.01f, 1.f); //[a, b)
@@ -187,14 +187,14 @@ namespace
 		////////////////////////////////////////////////////////
 
 		const size_t numParticles =
-		//1024
-		//1024 * 16
-		//1024 * 32	
-		//1024 * 64				//~64_000
-		1024 * 640				//~640_000
-		//1024 * 1024				//~1mil
-		//1024 * 1024 * 10		//~10mil
-		;
+			//1024
+			//1024 * 16
+			//1024 * 32	
+			//1024 * 64				//~64_000
+			//1024 * 640				//~640_000
+			1024 * 1024				//~1mil
+			//1024 * 1024 * 10		//~10mil
+			;
 
 		std::vector<glm::vec4> posBufferCpu;
 		std::vector<glm::vec4> velBufferCpu;
@@ -203,7 +203,8 @@ namespace
 		{
 			//make a random position within normalized device coordinates (ndc)
 			posBufferCpu.emplace_back(ndcDist(rng), ndcDist(rng), ndcDist(rng), 1.0f);
-			velBufferCpu.emplace_back(0,0,0,0);
+			//posBufferCpu.emplace_back(ndcDist(rng), ndcDist(rng), (idx%2==0)?1.f:-1.f, 1.0f);
+			velBufferCpu.emplace_back(0, 0, 0, 0);
 			attractionBufferCpu.emplace_back(attractionDist(rng));
 		}
 
@@ -361,19 +362,27 @@ namespace
 				vec4 positions[];
 			};
 
+			out vec3 posNDC;
+
 			void main()
 			{
 				gl_Position = positions[gl_VertexID];
+				posNDC = vec3(gl_Position);
 			}
 		)";
 		const char* const pointsFG_src = R"(
 			#version 430
 
 			out vec4 fragColor;
+			in vec3 posNDC;
 
 			void main()
 			{
-				fragColor = vec4(1,1,1,1);
+				float positive = clamp(posNDC.z, 0, 1);
+				float negative = clamp(-posNDC.z, 0, 1);
+
+				float remaining = (1 - positive + negative);
+				fragColor = vec4(positive, remaining, negative,1);
 			}
 		)";
 
@@ -381,7 +390,7 @@ namespace
 		glShaderSource(pointsVS, 1, &pointVS_src, nullptr);
 		glCompileShader(pointsVS);
 		verifyShaderCompiled("pointsVS", pointsVS);
-		
+
 		GLuint pointsFS = glCreateShader(GL_FRAGMENT_SHADER);
 		glShaderSource(pointsFS, 1, &pointsFG_src, nullptr);
 		glCompileShader(pointsFS);
@@ -426,9 +435,9 @@ namespace
 			glfwGetCursorPos(window, &xPosDouble, &yPosDouble);
 			float xPos = (float)xPosDouble / width;		//[0, 1]
 			float yPos = (float)yPosDouble / height;	//[0, 1]
-			
+
 			float xPosNDC = (xPos * 2) - 1.0f;
-			float yPosNDC = -((yPos * 2) - 1.0f); 
+			float yPosNDC = -((yPos * 2) - 1.0f);
 
 			static int mouseUniformLoc = glGetUniformLocation(particleComputeShader, "mouseLoc_ndc");
 			static int timeUniformLoc = glGetUniformLocation(particleComputeShader, "deltaTimeSec");
@@ -447,7 +456,7 @@ namespace
 			glDispatchCompute(numParticles / workgroup_local_size, 1, 1);
 
 			//since we're not just writing to a shader storage; only wait on that.
-			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);	
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 			////////////////////////////////////////////////////////
 			// On screen frame buffer
@@ -477,7 +486,7 @@ namespace
 	}
 }
 
-//int main()
-//{
-//	true_main();
-//}
+int main()
+{
+	true_main();
+}
