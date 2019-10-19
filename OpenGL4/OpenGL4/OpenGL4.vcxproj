@@ -131,6 +131,9 @@
     <ClCompile Include="includes\glm\detail\glm.cpp" />
     <ClCompile Include="src\demos\compute_shaders\0.1 basic_compute_shader.cpp" />
     <ClCompile Include="src\demos\compute_shaders\0.0 simple_render_to_texture.cpp" />
+    <ClCompile Include="src\demos\compute_shaders\0.2 compute_shader_work_groups.cpp" />
+    <ClCompile Include="src\demos\compute_shaders\1.0 visualizing_built_ins.cpp" />
+    <ClCompile Include="src\demos\compute_shaders\2.0_ShaderStorageBuffer.cpp" />
     <ClCompile Include="src\demos\from_3.3_demos\render_to_texture.cpp" />
     <ClCompile Include="src\demos\error_callbacks.cpp" />
     <ClCompile Include="src\old_utils\CameraFPS.cpp" />

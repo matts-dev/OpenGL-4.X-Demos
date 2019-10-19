@@ -16,12 +16,13 @@
 
 namespace
 {
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//opengl3.3 style of error checking; useful because immediate 
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//opengl3.3 style of error checking; useful because immediate 
 	inline void clearErrorsGL()
 	{
 		unsigned long error = GL_NO_ERROR;
-		do{
+		do
+		{
 			error = glGetError();
 		} while (error != GL_NO_ERROR);
 	}
@@ -41,45 +42,45 @@ namespace
 #define ec(func) clearErrorsGL(); /*clear previous errors */\
 	func;			/*call function*/ \
 	LogGLErrors(#func, __FILE__, __LINE__)
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// opengl 4.3 style of error checking
-static void APIENTRY openGLErrorCallback_4_3(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
-{
-	auto typeToText = [](GLenum type)
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// opengl 4.3 style of error checking
+	static void APIENTRY openGLErrorCallback_4_3(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 	{
-		switch (type)
+		auto typeToText = [](GLenum type)
 		{
-			case GL_DEBUG_TYPE_ERROR: return "GL_DEBUG_TYPE_ERROR";
-			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR";
-			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR";
-			case GL_DEBUG_TYPE_PORTABILITY: return "GL_DEBUG_TYPE_PORTABILITY";
-			case GL_DEBUG_TYPE_PERFORMANCE: return "GL_DEBUG_TYPE_PERFORMANCE";
-			default: return "unknown type string";
-		}
-	};
+			switch (type)
+			{
+				case GL_DEBUG_TYPE_ERROR: return "GL_DEBUG_TYPE_ERROR";
+				case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR";
+				case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR";
+				case GL_DEBUG_TYPE_PORTABILITY: return "GL_DEBUG_TYPE_PORTABILITY";
+				case GL_DEBUG_TYPE_PERFORMANCE: return "GL_DEBUG_TYPE_PERFORMANCE";
+				default: return "unknown type string";
+			}
+		};
 
-	auto severityToText = [](GLenum severity)
-	{
-		switch (severity)
+		auto severityToText = [](GLenum severity)
 		{
-			case GL_DEBUG_SEVERITY_HIGH: return "GL_DEBUG_SEVERITY_HIGH";
-			case GL_DEBUG_SEVERITY_MEDIUM: return "GL_DEBUG_SEVERITY_MEDIUM";
-			case GL_DEBUG_SEVERITY_LOW: return "GL_DEBUG_SEVERITY_LOW";
-			case GL_DEBUG_SEVERITY_NOTIFICATION: return "GL_DEBUG_SEVERITY_NOTIFICATION";
-			default: return "unknown";
-		}
-	};
+			switch (severity)
+			{
+				case GL_DEBUG_SEVERITY_HIGH: return "GL_DEBUG_SEVERITY_HIGH";
+				case GL_DEBUG_SEVERITY_MEDIUM: return "GL_DEBUG_SEVERITY_MEDIUM";
+				case GL_DEBUG_SEVERITY_LOW: return "GL_DEBUG_SEVERITY_LOW";
+				case GL_DEBUG_SEVERITY_NOTIFICATION: return "GL_DEBUG_SEVERITY_NOTIFICATION";
+				default: return "unknown";
+			}
+		};
 
-	if (type == GL_DEBUG_TYPE_ERROR || type == GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR || type == GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR || type == GL_DEBUG_TYPE_PORTABILITY || type == GL_DEBUG_TYPE_PERFORMANCE)
-	{
-		std::cout << "OpenGL Error : " << message << std::endl;
-		std::cout << "source : " << source << "\ttype : " << typeToText(type) << "\tid : " << id << "\tseverity : " << severityToText(severity) << std::endl;
+		if (type == GL_DEBUG_TYPE_ERROR || type == GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR || type == GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR || type == GL_DEBUG_TYPE_PORTABILITY || type == GL_DEBUG_TYPE_PERFORMANCE)
+		{
+			std::cout << "OpenGL Error : " << message << std::endl;
+			std::cout << "source : " << source << "\ttype : " << typeToText(type) << "\tid : " << id << "\tseverity : " << severityToText(severity) << std::endl;
+		}
 	}
-}
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	void true_main()
 	{
@@ -291,18 +292,28 @@ static void APIENTRY openGLErrorCallback_4_3(GLenum source, GLenum type, GLuint 
 		////////////////////////////////////////////////////////
 		// Creating a compute shader
 		////////////////////////////////////////////////////////
+		constexpr uint32_t workgroup_local_size = 32u;
 		const char* const compute_src = R"(
-			#version 430														//compute shaders were added in OpenGL 4.3
-			layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;	//this compute shaders will have a workgroup for each pixel, so each work group only needs 1 thread.
-			layout(rgba32f, binding = 0) uniform image2D img_output;			//We're going to be writing via "image" operations, so we need to set up our output to be an image2D, not a sampler2D
+			#version 430														
+			layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;	
+			layout(rgba32f, binding = 0) uniform image2D img_output;			
 			
 			void main()
 			{
-				vec4 outPixel = vec4(0,0,0,1.f);
-				ivec2 pixelCoordinate = ivec2(gl_GlobalInvocationID.xy);		//gl_GlobalInvocationID is essentially a xyz thread number not accounting for workgroup layouts; it is calculated like: gl_WorkGroupID * gl_WorkGroupSize + gl_LocalInvocationID
-				
-				outPixel.r = 1.0f;												//just make it red for testing
+				//___________BUILT-IN-CS-VARS___________\\
+				// in uvec3 gl_NumWorkGroups;			// xyz of the work group count (what is passed to the dispatch function)
+				// in uvec3 gl_WorkGroupID;				// the workgroup ID this thread(shader invocation) belongs to
+				// in uvec3 gl_LocalInvocationID;		// The local thread number to this work group (xyz)
+				// in uvec3 gl_GlobalInvocationID;		// The thread (xyz) ID out of all threads in this compute dispatch, NOT relative to workgroup
+				// in uint  gl_LocalInvocationIndex;	// The thread linear ID of all the threads in the compute dispatch; NOT relative to workgroup
+				// const uvec3 gl_WorkGroupSize;		// the size of the current work group (ie what is specified at the top)
 
+				//color the pixel based on its work group!
+				vec4 outPixel = vec4(0,0,0,1.f);
+				outPixel.r = float(gl_WorkGroupID.x) / gl_NumWorkGroups.x;
+				outPixel.b = float(gl_WorkGroupID.y) / gl_NumWorkGroups.y;	//use blue as other colors because I mix green/red up too easily
+
+				ivec2 pixelCoordinate = ivec2(gl_GlobalInvocationID.xy);		//gl_GlobalInvocationID is essentially a xyz thread number not accounting for workgroup layouts; it is calculated like: gl_WorkGroupID * gl_WorkGroupSize + gl_LocalInvocationID
 				imageStore(img_output, pixelCoordinate, outPixel);				//the image store function is how we write to our image
 			}
 		)";
@@ -312,7 +323,7 @@ static void APIENTRY openGLErrorCallback_4_3(GLenum source, GLenum type, GLuint 
 		glCompileShader(computeShader);
 		verifyShaderCompiled("compute shader", computeShader);
 
- 		GLuint computeProgram = glCreateProgram();
+		GLuint computeProgram = glCreateProgram();
 		glAttachShader(computeProgram, computeShader);
 		glLinkProgram(computeProgram);
 		verifyShaderLink(computeProgram);
@@ -320,7 +331,7 @@ static void APIENTRY openGLErrorCallback_4_3(GLenum source, GLenum type, GLuint 
 		glDeleteShader(computeShader);
 
 		glUseProgram(computeProgram);
-		
+
 		////////////////////////////////////////////////////////
 		// Render Loop
 		////////////////////////////////////////////////////////
@@ -344,7 +355,7 @@ static void APIENTRY openGLErrorCallback_4_3(GLenum source, GLenum type, GLuint 
 			////////////////////////////////////////////////////////
 
 			glUseProgram(computeProgram);
-			glDispatchCompute(output_width, output_height, 1);
+			glDispatchCompute(output_width / workgroup_local_size, output_height / workgroup_local_size, 1);
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);	//prevents passing until done with image; alternatively can use GL_ALL_BARRIER_BITS
 
 			////////////////////////////////////////////////////////
