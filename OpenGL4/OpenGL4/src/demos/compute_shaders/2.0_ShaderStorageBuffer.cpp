@@ -115,113 +115,6 @@ namespace
 		glViewport(0, 0, width, height);
 		glfwSetFramebufferSizeCallback(window, [](GLFWwindow*window, int width, int height) {  glViewport(0, 0, width, height); });
 
-		////////////////////////////////////////////////////////
-		// Post processing quad (ie render to texture)
-		////////////////////////////////////////////////////////
-		float quadVerts[] = {
-			//x    y         s    t
-			-1.0, -1.0,		0.0, 0.0,
-			-1.0, 1.0,		0.0, 1.0,
-			1.0, -1.0,		1.0, 0.0,
-
-			1.0, -1.0,      1.0, 0.0,
-			-1.0, 1.0,      0.0, 1.0,
-			1.0, 1.0,		1.0, 1.0
-		};
-
-		GLuint quadVAO;
-		glGenVertexArrays(1, &quadVAO);
-		glBindVertexArray(quadVAO);
-
-		GLuint quadVBO;
-		glGenBuffers(1, &quadVBO);
-		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(0));
-		glEnableVertexAttribArray(0);
-
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
-		glEnableVertexAttribArray(1);
-
-		glBindVertexArray(0);
-
-		const char* postprocess_vertex_shader_src = R"(
-				#version 330 core
-				layout (location = 0) in vec2 position;				
-				layout (location = 1) in vec2 inTexCoord;
-				
-				out vec2 texCoord;
-
-				void main(){
-					texCoord = inTexCoord;
-					gl_Position = vec4(position.x, position.y, 0.0f, 1.0f);
-				}
-			)";
-		const char* postprocess_frag_shader_src = R"(
-				#version 330 core
-				out vec4 fragmentColor;
-
-				in vec2 texCoord;
-
-				uniform sampler2D screencapture;
-				
-				void main(){
-					fragmentColor = texture(screencapture, texCoord);
-				}
-			)";
-
-		GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
-		glShaderSource(vertShader, 1, &postprocess_vertex_shader_src, nullptr);
-		glCompileShader(vertShader);
-
-		GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-		glShaderSource(fragShader, 1, &postprocess_frag_shader_src, nullptr);
-		glCompileShader(fragShader);
-
-		auto verifyShaderCompiled = [](const char* shadername, GLuint shader)
-		{
-			GLint success = 0;
-			glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-			if (!success)
-			{
-				constexpr int size = 512;
-				char infolog[size];
-
-				glGetShaderInfoLog(shader, size, nullptr, infolog);
-				std::cerr << "shader failed to compile: " << shadername << infolog << std::endl;
-			}
-		};
-		verifyShaderCompiled("vertex shader", vertShader);
-		verifyShaderCompiled("fragment shader", fragShader);
-
-		GLuint texturedQuadShaderProgram = glCreateProgram();
-		glAttachShader(texturedQuadShaderProgram, vertShader);
-		glAttachShader(texturedQuadShaderProgram, fragShader);
-		glLinkProgram(texturedQuadShaderProgram);
-		auto verifyShaderLink = [](GLuint shaderProgram)
-		{
-			GLint success = 0;
-			glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-			if (!success)
-			{
-				constexpr int size = 512;
-				char infolog[size];
-
-				glGetProgramInfoLog(shaderProgram, size, nullptr, infolog);
-				std::cerr << "SHADER LINK ERROR: " << infolog << std::endl;
-			}
-		};
-		verifyShaderLink(texturedQuadShaderProgram);
-
-		glDeleteShader(vertShader);
-		glDeleteShader(fragShader);
-
-		int uniformLocation = glGetUniformLocation(texturedQuadShaderProgram, "screencapture");
-		glUseProgram(texturedQuadShaderProgram);
-		glUniform1i(uniformLocation, 0);
-
-		glEnable(GL_DEPTH_TEST);
 
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Compute Shaders - https://www.khronos.org/opengl/wiki/Compute_Shader
@@ -292,16 +185,17 @@ namespace
 		////////////////////////////////////////////////////////
 		// Compute shader storage buffer loading
 		////////////////////////////////////////////////////////
-		//#TODO example with dynamic binding rather hardcoded in shader
-		//#TODO example with arrays like uniformblocks in geometry shaders?
 
-		//const size_t numParticles = 1024;
-		//const size_t numParticles = 1024 * 16;
-		//const size_t numParticles = 1024 * 32;	
-		const size_t numParticles = 1024 * 64;	//~64_000
-		//const size_t numParticles = 1024 * 64 * 10;	//~640_000
-		//const size_t numParticles = 1024 * 1024; //~1mil
-		//const size_t numParticles = 1024 * 1024 * 10; //~10mil
+		const size_t numParticles =
+		//1024
+		//1024 * 16
+		//1024 * 32	
+		//1024 * 64				//~64_000
+		1024 * 640				//~640_000
+		//1024 * 1024				//~1mil
+		//1024 * 1024 * 10		//~10mil
+		;
+
 		std::vector<glm::vec4> posBufferCpu;
 		std::vector<glm::vec4> velBufferCpu;
 		std::vector<float> attractionBufferCpu;
@@ -332,6 +226,34 @@ namespace
 		// Creating a compute shader
 		////////////////////////////////////////////////////////
 		constexpr uint32_t workgroup_local_size = 32u;
+
+		auto verifyShaderCompiled = [](const char* shadername, GLuint shader)
+		{
+			GLint success = 0;
+			glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+			if (!success)
+			{
+				constexpr int size = 512;
+				char infolog[size];
+
+				glGetShaderInfoLog(shader, size, nullptr, infolog);
+				std::cerr << "shader failed to compile: " << shadername << infolog << std::endl;
+			}
+		};
+
+		auto verifyShaderLink = [](GLuint shaderProgram)
+		{
+			GLint success = 0;
+			glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+			if (!success)
+			{
+				constexpr int size = 512;
+				char infolog[size];
+
+				glGetProgramInfoLog(shaderProgram, size, nullptr, infolog);
+				std::cerr << "SHADER LINK ERROR: " << infolog << std::endl;
+			}
+		};
 
 		auto createComputeShader_closure = [verifyShaderCompiled, verifyShaderLink]
 		(GLuint& shaderProgram, const char* const src)
@@ -420,10 +342,6 @@ namespace
 				//write data back to buffers
 				positions[globalIndex] = position;
 				velocities[globalIndex] = velocity;
-
-				//#TODO reflect velocity off of bounds of NDC cube? rather than just having them stick?
-				//TODO render position to texture? May need to be done in another shader
-				//TODO render z value as color, red = negative, blue = positive
 			}
 		)";
 		GLuint particleComputeShader;
@@ -478,6 +396,7 @@ namespace
 		glDeleteShader(pointsVS);
 		glDeleteShader(pointsFS);
 
+		glEnable(GL_DEPTH_TEST);
 
 		////////////////////////////////////////////////////////
 		// Render Loop
@@ -537,15 +456,10 @@ namespace
 
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			//glUseProgram(texturedQuadShaderProgram);
-			//glActiveTexture(GL_TEXTURE0);
-			//glBindTexture(GL_TEXTURE_2D, outputTex);
-			//glBindVertexArray(quadVAO);
-			//glDrawArrays(GL_TRIANGLES, 0, 6);
 
 			glUseProgram(pointShader);
 			glBindVertexArray(particleVAO);
-			glDrawArrays(GL_POINTS, 0, numParticles);
+			glDrawArrays(GL_POINTS, 0, numParticles); //it appears you only need a VAO, you don't need any vert attributes!
 
 			glfwSwapBuffers(window);
 			glfwPollEvents();
@@ -554,13 +468,10 @@ namespace
 
 		glfwTerminate();
 
-		glDeleteVertexArrays(1, &quadVAO);
-		glDeleteBuffers(1, &quadVBO);			//#todo if this isn't used anymore (no frame buffer stuff); #todo may be present in other demos
 		glDeleteBuffers(1, &position_SSBO);
 		glDeleteBuffers(1, &velocity_SSBO);
 		glDeleteBuffers(1, &attractionStrength_SSBO);
 		glDeleteProgram(particleComputeShader);
-		glDeleteProgram(texturedQuadShaderProgram);
 		glDeleteProgram(pointShader);
 		glDeleteVertexArrays(1, &particleVAO);
 	}
