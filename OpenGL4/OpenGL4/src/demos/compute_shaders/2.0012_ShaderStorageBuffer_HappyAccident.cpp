@@ -1,6 +1,7 @@
 #pragma once
 #include<iostream>
 #include <string>
+#include<cmath>
 
 #include<glad/glad.h> //include opengl headers, so should be before anything that uses those headers (such as GLFW)
 #include<GLFW/glfw3.h>
@@ -85,8 +86,9 @@ namespace
 
 	void true_main()
 	{
-		int width = 1200;
-		int height = 900;
+		//make this a square so this demo doesn't have to do any special math with aspect to lay out points
+		int width = 1000;
+		int height = width;
 
 		glfwInit();
 		glfwSetErrorCallback([](int errorCode, const char* errorDescription) {std::cout << "GLFW error : " << errorCode << " : " << errorDescription << std::endl; });
@@ -186,37 +188,41 @@ namespace
 		// Compute shader storage buffer loading
 		////////////////////////////////////////////////////////
 
-		const size_t numParticles =
+		const size_t rows =
+			//16
+			//32
+			//64
+			128
 			//1024
-			//1024 * 16
-			//1024 * 32	
-			//1024 * 64				//~64_000
-			//1024 * 640				//~640_000
-			1024 * 1024				//~1mil
-			//1024 * 1024 * 10		//~10mil
 			;
 
+		const size_t numParticles = rows * rows;
+
+		std::vector<glm::vec4> rootPosBufferCpu;
 		std::vector<glm::vec4> posBufferCpu;
-		std::vector<glm::vec4> velBufferCpu;
 		std::vector<float> attractionBufferCpu;
 		for (size_t idx = 0; idx < numParticles; ++idx)
 		{
+			//uniformly distribute the square over [0,1] -- then spread out over NDC area [-1,1]
+			float x = ((float(idx % rows) / rows) - 0.5f) * 2.f;
+			float y = ((float(idx / rows) / rows) - 0.5f) * 2.f;
+			float z = 0.0f;
+
 			//make a random position within normalized device coordinates (ndc)
-			posBufferCpu.emplace_back(ndcDist(rng), ndcDist(rng), ndcDist(rng), 1.0f);
-			//posBufferCpu.emplace_back(ndcDist(rng), ndcDist(rng), (idx%2==0)?1.f:-1.f, 1.0f);
-			velBufferCpu.emplace_back(0, 0, 0, 0);
+			rootPosBufferCpu.emplace_back(x, y, z, 1.0f);
+			posBufferCpu.emplace_back(x, y, z, 1.0f);
 			attractionBufferCpu.emplace_back(attractionDist(rng));
 		}
 
-		GLuint position_SSBO;
-		glGenBuffers(1, &position_SSBO);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, position_SSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, posBufferCpu.size() * sizeof(glm::vec4), &posBufferCpu[0], GL_DYNAMIC_COPY);	//https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glBufferData.xhtml 
+		GLuint root_SSBO;
+		glGenBuffers(1, &root_SSBO);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, root_SSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, rootPosBufferCpu.size() * sizeof(glm::vec4), &rootPosBufferCpu[0], GL_DYNAMIC_COPY);	//https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glBufferData.xhtml 
 
-		GLuint velocity_SSBO;
-		glGenBuffers(1, &velocity_SSBO);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, velocity_SSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, velBufferCpu.size() * sizeof(glm::vec4), &velBufferCpu[0], GL_DYNAMIC_COPY);
+		GLuint pos_SSBO;
+		glGenBuffers(1, &pos_SSBO);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, pos_SSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, posBufferCpu.size() * sizeof(glm::vec4), &posBufferCpu[0], GL_DYNAMIC_COPY);
 
 		GLuint attractionStrength_SSBO;
 		glGenBuffers(1, &attractionStrength_SSBO);
@@ -284,14 +290,14 @@ namespace
 			/////////////////////////////////////////////////////
 			// shader block storage
 			/////////////////////////////////////////////////////
-			layout(std430, binding = 0) buffer posSSBO
+			layout(std430, binding = 0) buffer rootSSBO
 			{
-				vec4 positions[];	//last element of buffer struct can be of unbounded size
+				vec4 rootLocs[];	//last element of buffer struct can be of unbounded size
 			};
 
-			layout(std430, binding = 1) buffer velSSBO
+			layout(std430, binding = 1) buffer posSSBO
 			{
-				vec4 velocities[];	
+				vec4 positions[];	
 			};
 
 			layout(std430, binding=2) buffer mouseAttractionSSBO
@@ -304,6 +310,9 @@ namespace
 			/////////////////////////////////////////////////////				
 			uniform vec2 mouseLoc_ndc;
 			uniform float deltaTimeSec;
+
+			uniform float mouseStrength = 1.f;
+			uniform float rootStrength = 0.1f;
 
 			/////////////////////////////////////////////////////
 			// main
@@ -322,27 +331,29 @@ namespace
 								+ gl_GlobalInvocationID.y * gl_WorkGroupSize.x
 								+ gl_GlobalInvocationID.x;
 				
+				vec4 rootLocation = rootLocs[globalIndex];
 				vec4 position = positions[globalIndex];
-				vec4 velocity = velocities[globalIndex];
-				float attraction = attractions[globalIndex];
 
-				position = velocity * deltaTimeSec + position;
-				
-				vec4 toMouse = vec4(mouseLoc_ndc, 0.f,1.f) - position;
-				float distToMouse = length(toMouse);
-				toMouse = toMouse / distToMouse;			//normalize, but use distance we already calculated
+				vec4 toRoot_n = rootLocation - position;
+				float toRootDist = length(toRoot_n);
+				toRoot_n = toRoot_n / toRootDist;
+
+				vec4 toMouse_n = vec4(mouseLoc_ndc, 0.f,1.f) - position;
+				float distToMouse = length(toMouse_n);
+				toMouse_n = toMouse_n / distToMouse;			//normalize, but use distance we already calculated
 
 				const float maxInfluenceDistance = 0.1;
 				float distanceFactor = clamp(distToMouse / maxInfluenceDistance, 0, 1);
-
-				velocity = velocity + attraction * distanceFactor * toMouse;
+				distanceFactor = 1.0f - distanceFactor;										//give further distance less power
 
 				//keep particles within the NDC bounds; velocities will correct themselves over time
-				position = clamp(position, vec4(-1,-1,-1, 1), vec4(1, 1, 1, 1));	//note, the w coordinate is 1; that is not a typo!
+				vec4 newPos = position ;//+ (toRoot_n * rootStrength);
+				newPos = newPos + (toMouse_n * mouseStrength * distanceFactor * deltaTimeSec);
+
+				newPos = clamp(newPos, vec4(-1,-1,-1, 1), vec4(1, 1, 1, 1));	//note, the w coordinate is 1; that is not a typo!
 
 				//write data back to buffers
-				positions[globalIndex] = position;
-				velocities[globalIndex] = velocity;
+				positions[globalIndex] = newPos;
 			}
 		)";
 		GLuint particleComputeShader;
@@ -357,32 +368,24 @@ namespace
 		const char* const pointVS_src = R"(
 			#version 430
 
-			layout(std430, binding = 0) buffer posSSBO
+			layout(std430, binding = 1) buffer posSSBO
 			{
 				vec4 positions[];
 			};
 
-			out vec3 posNDC;
-
 			void main()
 			{
 				gl_Position = positions[gl_VertexID];
-				posNDC = vec3(gl_Position);
 			}
 		)";
 		const char* const pointsFG_src = R"(
 			#version 430
 
 			out vec4 fragColor;
-			in vec3 posNDC;
 
 			void main()
 			{
-				float positive = clamp(posNDC.z, 0, 1);
-				float negative = clamp(-posNDC.z, 0, 1);
-
-				float remaining = (1 - positive + negative);
-				fragColor = vec4(positive, remaining, negative,1);
+				fragColor = vec4(1,1,1,1);
 			}
 		)";
 
@@ -449,8 +452,8 @@ namespace
 			//GLuint posBlockBinding = 0;
 			//glShaderStorageBlockBinding(particleComputeShader, posSSBO_ShaderIndex, posBlockBinding);
 
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, position_SSBO);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, velocity_SSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, root_SSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, pos_SSBO);
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, attractionStrength_SSBO);
 
 			glDispatchCompute(numParticles / workgroup_local_size, 1, 1);
@@ -477,8 +480,8 @@ namespace
 
 		glfwTerminate();
 
-		glDeleteBuffers(1, &position_SSBO);
-		glDeleteBuffers(1, &velocity_SSBO);
+		glDeleteBuffers(1, &root_SSBO);
+		glDeleteBuffers(1, &pos_SSBO);
 		glDeleteBuffers(1, &attractionStrength_SSBO);
 		glDeleteProgram(particleComputeShader);
 		glDeleteProgram(pointShader);

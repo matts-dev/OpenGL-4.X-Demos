@@ -1,6 +1,7 @@
 #pragma once
 #include<iostream>
 #include <string>
+#include<cmath>
 
 #include<glad/glad.h> //include opengl headers, so should be before anything that uses those headers (such as GLFW)
 #include<GLFW/glfw3.h>
@@ -85,8 +86,9 @@ namespace
 
 	void true_main()
 	{
+		//make this a square so this demo doesn't have to do any special math with aspect to lay out points
 		int width = 1200;
-		int height = 900;
+		int height = width;
 
 		glfwInit();
 		glfwSetErrorCallback([](int errorCode, const char* errorDescription) {std::cout << "GLFW error : " << errorCode << " : " << errorDescription << std::endl; });
@@ -186,24 +188,29 @@ namespace
 		// Compute shader storage buffer loading
 		////////////////////////////////////////////////////////
 
-		const size_t numParticles =
-			//1024
+		const size_t rows =
+			1024
 			//1024 * 16
 			//1024 * 32	
 			//1024 * 64				//~64_000
-			//1024 * 640				//~640_000
-			1024 * 1024				//~1mil
+			//1024 * 640			//~640_000
+			//1024 * 1024			//~1mil
 			//1024 * 1024 * 10		//~10mil
 			;
+
+		const size_t numParticles = rows * rows;
 
 		std::vector<glm::vec4> posBufferCpu;
 		std::vector<glm::vec4> velBufferCpu;
 		std::vector<float> attractionBufferCpu;
 		for (size_t idx = 0; idx < numParticles; ++idx)
 		{
+			float x = float(idx % rows) / rows;
+			float y = float(idx / rows) / rows;
+			float z = 0.0f;
+
 			//make a random position within normalized device coordinates (ndc)
-			posBufferCpu.emplace_back(ndcDist(rng), ndcDist(rng), ndcDist(rng), 1.0f);
-			//posBufferCpu.emplace_back(ndcDist(rng), ndcDist(rng), (idx%2==0)?1.f:-1.f, 1.0f);
+			posBufferCpu.emplace_back(x, y, z, 1.0f);
 			velBufferCpu.emplace_back(0, 0, 0, 0);
 			attractionBufferCpu.emplace_back(attractionDist(rng));
 		}
@@ -362,27 +369,19 @@ namespace
 				vec4 positions[];
 			};
 
-			out vec3 posNDC;
-
 			void main()
 			{
 				gl_Position = positions[gl_VertexID];
-				posNDC = vec3(gl_Position);
 			}
 		)";
 		const char* const pointsFG_src = R"(
 			#version 430
 
 			out vec4 fragColor;
-			in vec3 posNDC;
 
 			void main()
 			{
-				float positive = clamp(posNDC.z, 0, 1);
-				float negative = clamp(-posNDC.z, 0, 1);
-
-				float remaining = (1 - positive + negative);
-				fragColor = vec4(positive, remaining, negative,1);
+				fragColor = vec4(1,1,1,1);
 			}
 		)";
 

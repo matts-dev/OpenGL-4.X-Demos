@@ -63,6 +63,15 @@
     <ClCompile Include="src\demos\compute_shaders\2.01_ShaderStorageBuffer_colored.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\demos\compute_shaders\2.02_ShaderStorageBuffer_Waves.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\compute_shaders\2.0011_ShaderStorageBuffer_CoolEmergentPatterns.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\compute_shaders\2.0012_ShaderStorageBuffer_HappyAccident.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="static_lib\glfw3.lib" />
