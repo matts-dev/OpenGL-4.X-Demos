@@ -24,9 +24,6 @@
     <ClCompile Include="src\demos\error_callbacks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\demos\from_3.3_demos\render_to_texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\old_utils\CameraFPS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -70,6 +67,42 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\demos\compute_shaders\2.0012_ShaderStorageBuffer_HappyAccident.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\compute_shaders\2.0013_ShaderStorageBuffer_MouseBendingPointField.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\0_old_stuff_from_3.3_demos\render_to_texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\imgui.1.69.gl\EXAMPLE.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\imgui.1.69.gl\imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_demo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_draw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_impl_glfw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_impl_opengl3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_widgets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\tessellation_shaders\0_basic_tesselation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\tessellation_shaders\0_basic_tesselation_imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\tessellation_shaders\basic_tesselation_all_shapes_imgui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -828,6 +861,30 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\old_utils\Utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\imgui.1.69.gl\imconfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\imgui.1.69.gl\imgui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\imgui.1.69.gl\imgui_impl_glfw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\imgui.1.69.gl\imgui_impl_opengl3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\imgui.1.69.gl\imgui_internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\imgui.1.69.gl\imstb_rectpack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\imgui.1.69.gl\imstb_textedit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\imgui.1.69.gl\imstb_truetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

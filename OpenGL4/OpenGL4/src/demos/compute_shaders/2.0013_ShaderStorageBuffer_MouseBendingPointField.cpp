@@ -161,7 +161,7 @@ namespace
 		// Random Number Generator
 		////////////////////////////////////////////////////////
 		std::random_device rng;
-		std::seed_seq seed{ 28, 7, 9, 3, 101};
+		std::seed_seq seed{ 28, 7, 9, 3, 101 };
 		std::mt19937 rng_eng = std::mt19937(seed);
 		std::uniform_real_distribution<float> ndcDist(-1.f, 1.f); //[a, b)
 		std::uniform_real_distribution<float> attractionDist(0.01f, 1.f); //[a, b)
@@ -189,39 +189,30 @@ namespace
 		////////////////////////////////////////////////////////
 
 		const size_t rows =
-			//32 //<- minimum without lower dispatch size, otherwise division on dispatch group will be 0
+			//16
+			//32
 			//64
 			128
-			//256
-			//200
 			//1024
-		;
+			;
 
 		const size_t numParticles = rows * rows;
 
 		std::vector<glm::vec4> rootPosBufferCpu;
-		std::vector<glm::vec4> posBufferCpu; //#TODO remove unused buffers
+		std::vector<glm::vec4> posBufferCpu;
+		std::vector<float> attractionBufferCpu;
 		for (size_t idx = 0; idx < numParticles; ++idx)
 		{
 			//uniformly distribute the square over [0,1] -- then spread out over NDC area [-1,1]
 			float x = ((float(idx % rows) / rows) - 0.5f) * 2.f;
 			float y = ((float(idx / rows) / rows) - 0.5f) * 2.f;
 			float z = 0.0f;
-			
+
 			//make a random position within normalized device coordinates (ndc)
 			rootPosBufferCpu.emplace_back(x, y, z, 1.0f);
-			//posBufferCpu.emplace_back(x, y, z, 1.0f);
+			posBufferCpu.emplace_back(x, y, z, 1.0f);
+			attractionBufferCpu.emplace_back(attractionDist(rng));
 		}
-		float pointSpacing = (rootPosBufferCpu[1] - rootPosBufferCpu[0]).x;
-
-		//slopy adjustment so points don't align with edge of window; should do this in loop above but don't want to separate out the calc logic
-		for (size_t idx = 0; idx < numParticles; ++idx)
-		{
-			static float halfSpacing = pointSpacing / 2.0f;
-			rootPosBufferCpu[idx].x += halfSpacing;
-			rootPosBufferCpu[idx].y += halfSpacing;
-		}
-
 
 		GLuint root_SSBO;
 		glGenBuffers(1, &root_SSBO);
@@ -231,17 +222,12 @@ namespace
 		GLuint pos_SSBO;
 		glGenBuffers(1, &pos_SSBO);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, pos_SSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, rootPosBufferCpu.size() * sizeof(glm::vec4), &rootPosBufferCpu[0], GL_DYNAMIC_COPY);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, posBufferCpu.size() * sizeof(glm::vec4), &posBufferCpu[0], GL_DYNAMIC_COPY);
 
-		GLuint tempPos_SSBO;
-		glGenBuffers(1, &tempPos_SSBO);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, tempPos_SSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, rootPosBufferCpu.size() * sizeof(glm::vec4), &rootPosBufferCpu[0], GL_DYNAMIC_COPY);
-
-		GLuint debugBuffer_SSBO;
-		glGenBuffers(1, &debugBuffer_SSBO);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, debugBuffer_SSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, rootPosBufferCpu.size() * sizeof(glm::ivec2), &rootPosBufferCpu[0], GL_DYNAMIC_COPY);
+		GLuint attractionStrength_SSBO;
+		glGenBuffers(1, &attractionStrength_SSBO);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, attractionStrength_SSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, attractionBufferCpu.size() * sizeof(float), &attractionBufferCpu[0], GL_DYNAMIC_COPY);
 
 		////////////////////////////////////////////////////////
 		// Creating a compute shader
@@ -314,151 +300,21 @@ namespace
 				vec4 positions[];	
 			};
 
-			layout(std430, binding=2) buffer intermediateSSBO
+			layout(std430, binding=2) buffer mouseAttractionSSBO
 			{
-				vec4 tempPositions[];	
+				float attractions[];	
 			};
-
-			layout(std430, binding=3) buffer debugSSBO
-			{
-				ivec2 debug[];	
-			};
-
-
-			/////////////////////////////////////////////////////
-			// STATIC BRANCH PHASES
-			/////////////////////////////////////////////////////				
-			#define READ_POSITIONS 0
-			#define WRITE_POSITIONS 1
 
 			/////////////////////////////////////////////////////
 			// uniforms storage
 			/////////////////////////////////////////////////////				
 			uniform vec2 mouseLoc_ndc;
-			uniform float dt_sec;
+			uniform float deltaTimeSec;
 
-			uniform float mouseStrength = 100.0f;
-			uniform float rootStrength = 1.0f;	//TODO remove if not needed 
-
-			uniform float maxMouseInfluenceDistance = 0.5f;
+			uniform float mouseStrength = 0.9f;
+			uniform float rootStrength = 1.0f;
+			uniform float maxInfluenceDistance = 0.5f;
 			uniform uint falloffExponent = 4;
-			uniform float bMousePressed = 0.f;
-			uniform uint phase = WRITE_POSITIONS;
-
-			uniform int uNumPointRows = 1024;
-			uniform float uPointSpacing = 1.f;
-
-
-			/////////////////////////////////////////////////////
-			// helper functions
-			/////////////////////////////////////////////////////			
-			ivec2 wrapAround(ivec2 position)
-			{
-				position.x = position.x >= int(uNumPointRows) ? 0							: position.x;
-				position.y = position.y >= int(uNumPointRows) ? 0							: position.y;
-				position.x = position.x < 0						? int(uNumPointRows) - 1	: position.x;
-				position.y = position.y < 0						? int(uNumPointRows) - 1	: position.y;
-				return position;
-			}
-
-			uint getGlobalIndex(uvec2 position)
-			{
-				return position.y * uNumPointRows + position.x;
-			}
-
-			vec4 adjustPositionToNeighbors(vec4 position, ivec2 neighborIndices)
-			{
-				uint neighborGlobalIdx = getGlobalIndex(uvec2(neighborIndices));
-				vec4 neighborPos = positions[neighborGlobalIdx];
-				//vec4 neighborRoot = rootLocs[neighborGlobalIdx];
-
-				vec4 toNeighbor = neighborPos - position;
-				float distToNeighbor = length(toNeighbor);
-				
-				float pullDirection = distToNeighbor > uPointSpacing ? 1.0f : -1.0f;		//have close points push, far pull
-
-				//NDC so not normalizing vectors here
-				position = position + toNeighbor * pullDirection * dt_sec;
-
-				return position;				
-			}
-
-
-			vec4 getNeighborPullVec(vec4 position, ivec2 pointIdx_2D, ivec2 pointOffsetIdx)
-			{
-				////////////////////////////////////
-				// TEMP DELETE
-				uint globalIndex = gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_WorkGroupSize.y
-								+ gl_GlobalInvocationID.y * gl_WorkGroupSize.x
-								+ gl_GlobalInvocationID.x;
-				///////////////////////////////////
-
-
-				ivec2 neighborIdx = pointIdx_2D + pointOffsetIdx;
-
-				float uWrapOffset = 0.f;
-				float vWrapOffset = 0.f;
-
-				//------------ wrap horizontally ------------\\
-				//bool xBigger = neighborIdx.x >= uNumPointRows;
-				//debug[globalIndex] = ivec2(neighborIdx.x, int(xBigger)); 
-				//if(xBigger)
-				if(neighborIdx.x >= uNumPointRows)
-				{
-					uWrapOffset = uPointSpacing * float(uNumPointRows);  //this should calculate to be 1.0f in NDC; but this is more generic
-					neighborIdx.x = 0;
-				}
-				if (neighborIdx.x < 0)
-				{
-					uWrapOffset = -uPointSpacing * float(uNumPointRows);
-					neighborIdx.x = int(uNumPointRows) - 1;
-				}									
-				
-				// ------------ wrap vertically ------------\\
-				//bool yBigger = (neighborIdx.y >= uNumPointRows);
-				//if(yBigger)
-				if(neighborIdx.y >= uNumPointRows)
-				{
-					neighborIdx.y = 0; //TODO START HERE... enabling this, even when not varying y, has effect on point position. 
-					vWrapOffset = uPointSpacing * uNumPointRows; 
-				}
-				if (neighborIdx.y < 0)
-				{
-					neighborIdx.y = int(uNumPointRows) - 1;
-					vWrapOffset = -uPointSpacing * uNumPointRows;
-				}									
-				
-				vec4 neighborPos = positions[getGlobalIndex(uvec2(neighborIdx))];
-
-				//must do this calculation before accounting for wrap around
-				vec4 neighborRoot = rootLocs[getGlobalIndex(uvec2(neighborIdx))];
-				float distNeighborToitsRoot =  length(neighborRoot - neighborPos); 
-
-				neighborPos.x += uWrapOffset;
-				neighborPos.y += vWrapOffset;
-
-				///////////////////////////////////////////
-				// temp DELETE
-				//debug[globalIndex] = neighborIdx;
-				//debug[globalIndex] = ivec2(neighborIdx.x, uNumPointRows);
-				//debug[globalIndex] = pointIdx_2D;
-				//debug[globalIndex] = pointOffsetIdx;
-				//debug[globalIndex] = ivec2(neighborIdx.x, int(xBigger));
-				///////////////////////////////////////////
-
-				////////////////////////////////////////////////////////
-				//use neighbor point to calculate pull/push
-				///////////////////////////////////////////////////////
-				vec4 toNeighbor = neighborPos - position;
-				float distToNeighbor = length(toNeighbor);
-				
-				float pullDirection = distToNeighbor > uPointSpacing ? 1.0f : -1.0f;		//have close points push, far pull
-				vec4 dir = toNeighbor * pullDirection * dt_sec;		//NDC so not normalizing vectors here
-				dir = distNeighborToitsRoot < uPointSpacing / 2.f ? vec4(0.f) : dir;
-				
-				return dir;	
-			}
-
 
 			/////////////////////////////////////////////////////
 			// main
@@ -483,70 +339,22 @@ namespace
 				vec4 toRoot = rootLocation - position;
 				float toRootDist = length(toRoot);
 
-				//NOTE: glsl does not guarantee static branching implemented by driver (uniforms in branch effectively compile time branch)
-				if (phase == READ_POSITIONS)
-				{
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					// NOTE:
-					//	normalizing vectors when positions are in NDC [-1,1] actually creates bigger displacement vectors, so be mindful
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//normalizing vectors when positions are in NDC [-1,1] actually creates bigger displacement vectors, so be mindful
+				vec4 toMouse = vec4(mouseLoc_ndc, 0.f,1.f) - position;
+				float distToMouse = length(toMouse);
 
-					/////////////////////////////////////////////////////////
-					// Influence of position's root
-					/////////////////////////////////////////////////////////
-					
-					//after certain threshold, go directly to root
-					const float rootMaxDist = uPointSpacing * 2;
-					const float rootProportion = clamp(toRootDist / rootMaxDist, 0, 1);
-					vec4 rootPull = toRoot * dt_sec;
-					//rootPull = toRootDist < uPointSpacing / 1.f ? vec4(0.f) : rootPull;
+				float distanceFactor = clamp(distToMouse / maxInfluenceDistance, 0, 1);
+				distanceFactor = 1.0f - distanceFactor;										//give further distance less power
+				distanceFactor = pow(distanceFactor, falloffExponent);
 
+				//keep particles within the NDC bounds; velocities will correct themselves over time
+				vec4 newPos = position + (toRoot * rootStrength);// * deltaTimeSec;
+				newPos = newPos + (toMouse * mouseStrength * distanceFactor);// * deltaTimeSec);
 
-					/////////////////////////////////////////////////////////
-					// Influence of mouse
-					/////////////////////////////////////////////////////////
-					const float pullProportion = 1 - rootProportion;
+				newPos = clamp(newPos, vec4(-1,-1,-1, 1), vec4(1, 1, 1, 1));	//note, the w coordinate is 1; that is not a typo!
 
-					vec4 mousePull = vec4(0.f);
-					if(bMousePressed == 1.0f) //uniform static branching not gauranteed 
-					{
-						vec4 toMouse = vec4(mouseLoc_ndc, 0.f,1.f) - position;
-						float distToMouse = length(toMouse);
-
-						float distMouseFactor = clamp(distToMouse / maxMouseInfluenceDistance, 0, 1);
-						distMouseFactor = 1.0f - distMouseFactor;										//give further distance less power
-						distMouseFactor = pow(distMouseFactor, falloffExponent);
-
-						//mousePull = (toMouse * mouseStrength * distMouseFactor * bMousePressed * dt_sec);
-						mousePull = (toMouse * distMouseFactor * bMousePressed * dt_sec);
-					}
-
-					/////////////////////////////////////////////////////////
-					// Influence of neighbor positions
-					/////////////////////////////////////////////////////////
-
-					ivec2 center = ivec2(int(globalIndex) % uNumPointRows, int(globalIndex) / uNumPointRows);
-					vec4 neighborPull = vec4(0.f);
-					neighborPull = neighborPull + getNeighborPullVec(position, center, ivec2(1,0)		);	//right
-					neighborPull = neighborPull + getNeighborPullVec(position, center, ivec2(-1, 0)		);	//leff
-					neighborPull = neighborPull + getNeighborPullVec(position, center, ivec2(1,1)		);	//top right
-					neighborPull = neighborPull + getNeighborPullVec(position, center, ivec2(0,1)		);	//top 
-					neighborPull = neighborPull + getNeighborPullVec(position, center, ivec2(-1,1)		);	//top left
-					neighborPull = neighborPull + getNeighborPullVec(position, center, ivec2(-1, -1)	);	//bottom left
-					neighborPull = neighborPull + getNeighborPullVec(position, center, ivec2(0, -1)		);	//bottom
-					neighborPull = neighborPull + getNeighborPullVec(position, center, ivec2(1, -1)		);  //bottom right
-
-					vec4 pulledPosition = position + (rootProportion * rootPull) + (pullProportion * (mousePull + neighborPull));
-
-					pulledPosition = clamp(pulledPosition, vec4(-1,-1,-1, 1), vec4(1, 1, 1, 1));	//note, the w coordinate is 1; that is not a typo!
-					//pulledPosition = toRootDist < uPointSpacing / 10000.f ? rootLocation : pulledPosition;
-					
-					tempPositions[globalIndex] = pulledPosition;
-				}
-				else if (phase == WRITE_POSITIONS)
-				{
-					positions[globalIndex] = tempPositions[globalIndex];
-				}
+				//write data back to buffers
+				positions[globalIndex] = newPos;
 			}
 		)";
 		GLuint particleComputeShader;
@@ -561,34 +369,24 @@ namespace
 		const char* const pointVS_src = R"(
 			#version 430
 
-			layout(std430, binding = 0) buffer rootSSBO
-			{
-				vec4 rootPos[];
-			};
 			layout(std430, binding = 1) buffer posSSBO
 			{
 				vec4 positions[];
 			};
 
-			out vec3 color;
-
 			void main()
 			{
 				gl_Position = positions[gl_VertexID];
-
-				float distToRoot = length(positions[gl_VertexID] - rootPos[gl_VertexID]);
-				color = vec3(0, 1, distToRoot);
 			}
 		)";
 		const char* const pointsFG_src = R"(
 			#version 430
-	
-			in vec3 color;
+
 			out vec4 fragColor;
 
 			void main()
 			{
-				fragColor = vec4(color,1);
+				fragColor = vec4(1,1,1,1);
 			}
 		)";
 
@@ -596,7 +394,7 @@ namespace
 		glShaderSource(pointsVS, 1, &pointVS_src, nullptr);
 		glCompileShader(pointsVS);
 		verifyShaderCompiled("pointsVS", pointsVS);
-		
+
 		GLuint pointsFS = glCreateShader(GL_FRAGMENT_SHADER);
 		glShaderSource(pointsFS, 1, &pointsFG_src, nullptr);
 		glCompileShader(pointsFS);
@@ -633,8 +431,6 @@ namespace
 				glfwSetWindowShouldClose(window, true);
 			}
 
-			float mousePressed = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) ? 1.f : 0.f;
-
 			////////////////////////////////////////////////////////
 			// Run compute shader
 			////////////////////////////////////////////////////////
@@ -645,37 +441,27 @@ namespace
 			glfwGetCursorPos(window, &xPosDouble, &yPosDouble);
 			float xPos = (float)xPosDouble / width;		//[0, 1]
 			float yPos = (float)yPosDouble / height;	//[0, 1]
-			
+
 			float xPosNDC = (xPos * 2) - 1.0f;
-			float yPosNDC = -((yPos * 2) - 1.0f); 
+			float yPosNDC = -((yPos * 2) - 1.0f);
 
 			static int mouseUniformLoc = glGetUniformLocation(particleComputeShader, "mouseLoc_ndc");
-			static int timeUniformLoc = glGetUniformLocation(particleComputeShader, "dt_sec");
-			static int mousePressUniformLoc = glGetUniformLocation(particleComputeShader, "bMousePressed");
-			static int numRowsUniformLoc = glGetUniformLocation(particleComputeShader, "uNumPointRows");
-			static int phaseUniformLoc = glGetUniformLocation(particleComputeShader, "phase");
-			static int pointSpacingUniformLoc = glGetUniformLocation(particleComputeShader, "uPointSpacing");
-
+			static int timeUniformLoc = glGetUniformLocation(particleComputeShader, "deltaTimeSec");
 			glUniform2f(mouseUniformLoc, xPosNDC, yPosNDC);
 			glUniform1f(timeUniformLoc, deltaTime);
-			glUniform1f(mousePressUniformLoc, mousePressed);
-			glUniform1i(numRowsUniformLoc, int(rows)); //technically doesn't need to be set every frame, but this is demo code :)
-			glUniform1f(pointSpacingUniformLoc, pointSpacing);
+
+			//you can query the shader resource index, then set a binding that way... but it isn't really needed in OpenGL4.3 because shader storage bindings can be specified in layout
+			//GLuint posSSBO_ShaderIndex = glGetProgramResourceIndex(particleComputeShader, GL_SHADER_STORAGE_BLOCK, "posSSBO");
+			//GLuint posBlockBinding = 0;
+			//glShaderStorageBlockBinding(particleComputeShader, posSSBO_ShaderIndex, posBlockBinding);
 
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, root_SSBO);
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, pos_SSBO);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, tempPos_SSBO);
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, debugBuffer_SSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, attractionStrength_SSBO);
 
-			constexpr GLuint READ_PHASE = 0;
-			constexpr GLuint WRITE_PHASE = 1;
-
-			glUniform1ui(phaseUniformLoc, READ_PHASE);
 			glDispatchCompute(numParticles / workgroup_local_size, 1, 1);
-			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-			glUniform1ui(phaseUniformLoc, WRITE_PHASE);
-			glDispatchCompute(numParticles / workgroup_local_size, 1, 1);
+			//since we're not just writing to a shader storage; only wait on that.
 			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 			////////////////////////////////////////////////////////
@@ -698,8 +484,7 @@ namespace
 
 		glDeleteBuffers(1, &root_SSBO);
 		glDeleteBuffers(1, &pos_SSBO);
-		glDeleteBuffers(1, &tempPos_SSBO);
-		glDeleteBuffers(1, &tempPos_SSBO);
+		glDeleteBuffers(1, &attractionStrength_SSBO);
 		glDeleteProgram(particleComputeShader);
 		glDeleteProgram(pointShader);
 		glDeleteVertexArrays(1, &particleVAO);

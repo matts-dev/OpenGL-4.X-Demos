@@ -129,17 +129,28 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="includes\glm\detail\glm.cpp" />
+    <ClCompile Include="includes\imgui.1.69.gl\EXAMPLE.cpp" />
+    <ClCompile Include="includes\imgui.1.69.gl\imgui.cpp" />
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_demo.cpp" />
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_draw.cpp" />
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_impl_glfw.cpp" />
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="includes\imgui.1.69.gl\imgui_widgets.cpp" />
     <ClCompile Include="src\demos\compute_shaders\0.1 basic_compute_shader.cpp" />
     <ClCompile Include="src\demos\compute_shaders\0.0 simple_render_to_texture.cpp" />
     <ClCompile Include="src\demos\compute_shaders\0.2 compute_shader_work_groups.cpp" />
     <ClCompile Include="src\demos\compute_shaders\1.0 visualizing_built_ins.cpp" />
     <ClCompile Include="src\demos\compute_shaders\2.0011_ShaderStorageBuffer_CoolEmergentPatterns.cpp" />
     <ClCompile Include="src\demos\compute_shaders\2.0012_ShaderStorageBuffer_HappyAccident.cpp" />
+    <ClCompile Include="src\demos\compute_shaders\2.0013_ShaderStorageBuffer_MouseBendingPointField.cpp" />
     <ClCompile Include="src\demos\compute_shaders\2.01_ShaderStorageBuffer_colored.cpp" />
     <ClCompile Include="src\demos\compute_shaders\2.02_ShaderStorageBuffer_Waves.cpp" />
     <ClCompile Include="src\demos\compute_shaders\2.0_ShaderStorageBuffer.cpp" />
-    <ClCompile Include="src\demos\from_3.3_demos\render_to_texture.cpp" />
+    <ClCompile Include="src\demos\0_old_stuff_from_3.3_demos\render_to_texture.cpp" />
     <ClCompile Include="src\demos\error_callbacks.cpp" />
+    <ClCompile Include="src\demos\tessellation_shaders\0_basic_tesselation.cpp" />
+    <ClCompile Include="src\demos\tessellation_shaders\0_basic_tesselation_imgui.cpp" />
+    <ClCompile Include="src\demos\tessellation_shaders\basic_tesselation_all_shapes_imgui.cpp" />
     <ClCompile Include="src\old_utils\CameraFPS.cpp" />
     <ClCompile Include="src\old_utils\nu_utils.cpp" />
     <ClCompile Include="src\old_utils\Shader.cpp" />
@@ -396,6 +407,14 @@
     <ClInclude Include="includes\glm\vec3.hpp" />
     <ClInclude Include="includes\glm\vec4.hpp" />
     <ClInclude Include="includes\glm\vector_relational.hpp" />
+    <ClInclude Include="includes\imgui.1.69.gl\imconfig.h" />
+    <ClInclude Include="includes\imgui.1.69.gl\imgui.h" />
+    <ClInclude Include="includes\imgui.1.69.gl\imgui_impl_glfw.h" />
+    <ClInclude Include="includes\imgui.1.69.gl\imgui_impl_opengl3.h" />
+    <ClInclude Include="includes\imgui.1.69.gl\imgui_internal.h" />
+    <ClInclude Include="includes\imgui.1.69.gl\imstb_rectpack.h" />
+    <ClInclude Include="includes\imgui.1.69.gl\imstb_textedit.h" />
+    <ClInclude Include="includes\imgui.1.69.gl\imstb_truetype.h" />
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
     <ClInclude Include="src\old_utils\CameraFPS.h" />
