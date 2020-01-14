@@ -549,6 +549,7 @@ namespace
 		buildShaders();
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glPointSize(8.f); //default 1.0
 
 		//uniforms
 		bool bUseSingleOuterTL = 1;
