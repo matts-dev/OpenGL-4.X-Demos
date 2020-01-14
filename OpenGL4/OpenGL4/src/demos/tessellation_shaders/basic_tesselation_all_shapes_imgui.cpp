@@ -59,7 +59,7 @@ namespace
 
 			glGetShaderInfoLog(shader, size, nullptr, infolog);
 			std::cerr << "shader failed to compile: " << shadername << infolog << std::endl;
-			exit(-1);
+ 			exit(-1);
 		}
 	}
 
@@ -128,11 +128,10 @@ namespace
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		float isoline_vertices[] = {
 			//x    y      z				//rgb
-			-0.5f, -0.5f, 0.0f,		     1.f,0.f,0.f,
-			0.5f, -0.5f, 0.0f,			 0.f,0.f,1.f,
-
-			//-0.5f, -0.5f, 0.0f,		     1.f,0.f,0.f,
-			//-0.5f, 0.5f, 0.0f,			 0.f,0.f,1.f
+			-0.5f, -0.5f, 0.0f,		     1.f, 0.f, 0.f,	//bottom line
+			0.5f, -0.5f, 0.0f,			 0.f, 0.f, 1.f,	//bottom line
+			-0.5f, 0.5f, 0.0f,		     1.f, 1.f, 0.f,	//top lnie
+			0.5f, 0.5f, 0.0f,			 0.f, 1.f, 1.f	//top line
 		};
 		GLuint vao_isoline;
 		glGenVertexArrays(1, &vao_isoline);
@@ -163,6 +162,28 @@ namespace
 		glGenBuffers(1, &vbo_tri);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_tri);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(tri_vertices), tri_vertices, GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(0));
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+
+		//order here is important, quad edges are ordered ccw from top left
+		float quad_verts[] = {
+			//x    y      z				//rgb
+			-0.5f, -0.5f, 0.0f,		     1.f,0.f,0.f,
+			0.5f, -0.5f, 0.0f,			 0.f,0.f,1.f,
+			0.5f, 0.5f, 0.0f,		     1.f,1.f,0.f,
+			-0.5f, 0.5f, 0.0f,			 0.f,1.f,1.f
+		};
+		GLuint vao_quads;
+		glGenVertexArrays(1, &vao_quads);
+		glBindVertexArray(vao_quads);
+
+		GLuint vbo_quads;
+		glGenBuffers(1, &vbo_quads);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_quads);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_verts), quad_verts, GL_STATIC_DRAW);
 
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(0));
 		glEnableVertexAttribArray(0);
@@ -200,6 +221,7 @@ namespace
 		int primitive = PrimitiveType::TRIANGLES;
 		int spacing = SpacingType::EQUAL_SPACING;
 		int handedness = HandednessType::CCW;
+		bool bEnablePointMode = false;
 
 		auto buildShaders = [&]()
 		{
@@ -240,9 +262,11 @@ namespace
 			//-------------provided outputs ------------
 			//patch out float gl_TessLevelOuter[4];
 			//patch out float gl_TessLevelInner[2];
-			const char* tessellation_control_shader_src = R"(
+			const char* tess_control_tri_shader_src = R"(
 				#version 410 core
-				layout (vertices = 3) out;	//define OUTPUT patch_size (ie the control points), must be less than patch size limit
+
+				//define OUTPUT patch_size (ie the control points), must be less than patch size limit
+				layout (vertices = 3) out;	
 				
 				in vec3 pos_tcs_in[];
 				in vec3 color_tcs_in[];
@@ -276,8 +300,72 @@ namespace
 					gl_TessLevelInner[0] = innerTessLevel[0];
 				}
 			)";
+			const char* tess_control_quad_shader_src = R"(
+				#version 410 core
+				layout (vertices = 4) out;	
+				in vec3 pos_tcs_in[];
+				in vec3 color_tcs_in[];
+				out vec3 pos_es_in[];
+				out vec3 color_es_in[];
+
+				uniform float innerTessLevel[2];
+				uniform float outerTessLevels[4];
+				uniform bool bUseSingleGlobalTL = false;
+				uniform bool bUseSingleOuterTL = true;
+				float getOuterTessLevel(uint outerIndex)
+				{
+					if(bUseSingleGlobalTL) return innerTessLevel[0];
+					else return outerTessLevels[bUseSingleOuterTL ? 0 : outerIndex];
+				}
+				void main(){
+					pos_es_in[gl_InvocationID] = pos_tcs_in[gl_InvocationID];
+					color_es_in[gl_InvocationID] = color_tcs_in[gl_InvocationID];
+					
+					gl_TessLevelOuter[0] = getOuterTessLevel(0);
+					gl_TessLevelOuter[1] = getOuterTessLevel(1);
+					gl_TessLevelOuter[2] = getOuterTessLevel(2);
+					gl_TessLevelOuter[3] = getOuterTessLevel(3);
+					
+					gl_TessLevelInner[0] = innerTessLevel[0];
+					gl_TessLevelInner[1] = bUseSingleGlobalTL ? innerTessLevel[0] : innerTessLevel[1];
+				}
+			)";
+			const char* tess_control_isoline_shader_src = R"(
+				#version 410 core
+				layout (vertices = 4) out;	
+
+				in vec3 pos_tcs_in[];
+				in vec3 color_tcs_in[];
+
+				out vec3 pos_es_in[];
+				out vec3 color_es_in[];
+
+				uniform float innerTessLevel[2];
+				uniform float outerTessLevels[4];
+				uniform bool bUseSingleGlobalTL = false;
+				uniform bool bUseSingleOuterTL = true;
+
+				float getOuterTessLevel(uint outerIndex)
+				{
+					if(bUseSingleGlobalTL) return innerTessLevel[0];
+					else return outerTessLevels[bUseSingleOuterTL ? 0 : outerIndex];
+				}
+				void main(){
+					pos_es_in[gl_InvocationID] = pos_tcs_in[gl_InvocationID];
+					color_es_in[gl_InvocationID] = color_tcs_in[gl_InvocationID];
+					gl_TessLevelOuter[0] = getOuterTessLevel(0);
+					gl_TessLevelOuter[1] = getOuterTessLevel(1);
+				}
+			)";
+			
 			GLuint tessControlShader = glCreateShader(GL_TESS_CONTROL_SHADER);
-			glShaderSource(tessControlShader, 1, &tessellation_control_shader_src, nullptr);
+			const char * targetTCS = nullptr;
+
+			if (primitive == int(PrimitiveType::TRIANGLES)){targetTCS = tess_control_tri_shader_src;}
+			else if (primitive == int(PrimitiveType::QUADS)){targetTCS = tess_control_quad_shader_src;}
+			else { targetTCS = tess_control_isoline_shader_src; }
+
+			glShaderSource(tessControlShader, 1, &targetTCS, nullptr);
 			glCompileShader(tessControlShader);
 			verifyShaderCompiled("tess control shader", tessControlShader);
 
@@ -304,6 +392,7 @@ namespace
 				LAYOUT_PRIMITIVE_STR
 				LAYOUT_SPACING_STR;
 				LAYOUT_HANDEDNESS_STR;
+				LAYOUT_POINTMODE;
 
 				in vec3 pos_es_in[];
 				in vec3 color_es_in[];				
@@ -321,9 +410,24 @@ namespace
 				{
 					return (a*gl_TessCoord.x + b*gl_TessCoord.y + c*gl_TessCoord.z);
 				}
+				vec3 quadInterpolate(vec3 pntA, vec3 pntB, vec3 pntC, vec3 pntD)
+				{
+					//quad gives a 2d point that is on the normalized patch
+					vec3 top = mix(pntC, pntD, gl_TessCoord.x);
+					vec3 bottom = mix(pntA, pntB, gl_TessCoord.x);
+					return mix(top, bottom, gl_TessCoord.y);
+				}
+				vec3 ioslineInterpolation(vec3 a, vec3 b, vec3 c, vec3 d)
+				{
+					//implementation-wise, very similar to quad. gl_TessCoord.y is the offset of the line
+					vec3 top = mix(c, d, gl_TessCoord.x);
+					vec3 bottom = mix(a, b, gl_TessCoord.x);
+					return mix(top, bottom, gl_TessCoord.y);
+				}
 
 				void main(){
-					if(primitiveMode == TRIANGLES)
+					//for simplicity, just handle all different primitive types in this demo in a single shader
+					if( primitiveMode == TRIANGLES )
 					{
 						pos_fs_in = barycentric_interpolate_3d(pos_es_in[0], pos_es_in[1], pos_es_in[2]);
 						color_fs_in = barycentric_interpolate_3d(color_es_in[0], color_es_in[1], color_es_in[2]);
@@ -331,15 +435,16 @@ namespace
 						//here is where we should do any perspective transformation for setting w values for clipping
 						gl_Position = vec4(pos_fs_in, 1.0f);
 					}
-					else if (primitiveMode == ISOLINES)
+					else if ( primitiveMode == ISOLINES )
 					{
-						pos_fs_in = barycentric_interpolate_3d(pos_es_in[0], pos_es_in[1], pos_es_in[2]);
-						color_fs_in = barycentric_interpolate_3d(color_es_in[0], color_es_in[1], color_es_in[2]);
+						pos_fs_in = ioslineInterpolation(pos_es_in[0], pos_es_in[1], pos_es_in[2], pos_es_in[3]);
+						color_fs_in = ioslineInterpolation(color_es_in[0], color_es_in[1], color_es_in[2], color_es_in[3]);
 						gl_Position = vec4(pos_fs_in, 1.0f);
 					}
-					else if (primitiveMode == QUADS){
-						pos_fs_in = barycentric_interpolate_3d(pos_es_in[0], pos_es_in[1], pos_es_in[2]);
-						color_fs_in = barycentric_interpolate_3d(color_es_in[0], color_es_in[1], color_es_in[2]);
+					else if ( primitiveMode == QUADS ){
+						//NOTICE: the indices are not in order 0,1,2,3 -- but 0,3,1,2. This is how the quad edges are defined. 0,2 are vertical, 1,3 are horizontal
+						pos_fs_in = quadInterpolate(pos_es_in[0], pos_es_in[3], pos_es_in[1], pos_es_in[2]);
+						color_fs_in = quadInterpolate(color_es_in[0], color_es_in[3], color_es_in[1], color_es_in[2]);
 						gl_Position = vec4(pos_fs_in, 1.0f);
 					}
 				}
@@ -353,6 +458,8 @@ namespace
 			const std::string fractional_odd_spacing_str = "layout(fractional_odd_spacing) in;";
 			const std::string ccw_str = "layout(ccw) in;";
 			const std::string cw_str = "layout(cw) in;";
+			const std::string point_mode_on = "layout(point_mode) in;";
+			const std::string point_mode_off = "";
 
 			std::string primitive_str;
 			switch (PrimitiveType(primitive))
@@ -378,6 +485,8 @@ namespace
 			const std::string replaceStr_primitive("LAYOUT_PRIMITIVE_STR");
 			const std::string replaceStr_space("LAYOUT_SPACING_STR");
 			const std::string replaceStr_handedness("LAYOUT_HANDEDNESS_STR");
+			const std::string replaceStr_pointMode("LAYOUT_POINTMODE");
+				
 
 			tess_evaluation_shader_src.replace(
 				tess_evaluation_shader_src.find(replaceStr_primitive),
@@ -393,6 +502,11 @@ namespace
 				tess_evaluation_shader_src.find(replaceStr_handedness),
 				replaceStr_handedness.length(),
 				handedness_str
+			);
+			tess_evaluation_shader_src.replace(
+				tess_evaluation_shader_src.find(replaceStr_pointMode),
+				replaceStr_pointMode.length(),
+				bEnablePointMode ? point_mode_on : point_mode_off
 			);
 
 
@@ -446,6 +560,7 @@ namespace
 		const GLint bUseSingleGlobalTL_ul = glGetUniformLocation(shaderProg, "bUseSingleGlobalTL");
 		const GLint innerTessLevel_ul = glGetUniformLocation(shaderProg, "innerTessLevel");
 		const GLint outerTessLevels_ul = glGetUniformLocation(shaderProg, "outerTessLevels");
+		const GLint primitiveMode_ul = glGetUniformLocation(shaderProg, "primitiveMode");
 
 		bool bRebuildShaders = false;
 		while (!glfwWindowShouldClose(window))
@@ -468,6 +583,7 @@ namespace
 
 			glUniform1i(bUseSingleGlobalTL_ul, int(bUseSingleGlobalTL)); //controls whether or not to allow independent outer levels
 			glUniform1i(bUseSingleOuterTL_ul, int(bUseSingleOuterTL)); //controls whether or not to allow independent outer levels
+			glUniform1i(primitiveMode_ul, primitive); //switches the TES method of interpolating vertices
 			glUniform1fv(innerTessLevel_ul, 2, &innerTessLevels[0]);
 			glUniform1fv(outerTessLevels_ul, 4, &outerTessLevels[0]);
 
@@ -484,6 +600,10 @@ namespace
 				} 
 				case QUADS:
 				{
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+					glPatchParameteri(GL_PATCH_VERTICES, 4);
+					glBindVertexArray(vao_quads);
+					glDrawArrays(GL_PATCHES, 0, 4);
 					break;
 				}
 				case ISOLINES:
@@ -497,7 +617,6 @@ namespace
 				}
 			}
 
-
 			{ //interactive UI
 				ImGui_ImplOpenGL3_NewFrame();
 				ImGui_ImplGlfw_NewFrame();
@@ -507,6 +626,7 @@ namespace
 					ImGuiWindowFlags flags = 0;
 					ImGui::Begin("OpenGL Tweaker (imgui library)", nullptr, flags);
 					{
+						if(ImGui::Checkbox("layout(point_mode) in;", &bEnablePointMode)) { bRebuildShaders = true; }
 						ImGui::Checkbox("Use single tess level everywhere", &bUseSingleGlobalTL);
 						if (bUseSingleGlobalTL)
 						{
@@ -514,8 +634,8 @@ namespace
 						}
 						else
 						{
-							ImGui::SliderFloat("Inner Tess Levels 0", &innerTessLevels[0], 0.f, 10.01f);
-							ImGui::SliderFloat("Inner Tess Levels 1", &innerTessLevels[1], 0.f, 15.f);
+							ImGui::SliderFloat("Inner Tess Levels 0", &innerTessLevels[0], 0.f, 10.f);
+							ImGui::SliderFloat("Inner Tess Levels 1", &innerTessLevels[1], 0.f, 10.f);
 
 							ImGui::Dummy({ 0.f, 10.0f }); //make some space between the sliders
 
@@ -524,7 +644,6 @@ namespace
 							if (bUseSingleOuterTL)
 							{
 								ImGui::SliderFloat("Outer Tess Levels 0", &outerTessLevels[0], 0.f, 10.f);
-								ImGui::SliderFloat("Outer Tess Levels 0", &outerTessLevels[1], 0.f, 10.f);
 							}
 							else
 							{
@@ -536,7 +655,7 @@ namespace
 						}
 						ImGui::Separator();
 						{
-							if (ImGui::RadioButton("equal_spacing", &spacing, int(SpacingType::EQUAL_SPACING))) { bRebuildShaders = true; }
+							if (ImGui::RadioButton("equal_spacing", &spacing, int(SpacingType::EQUAL_SPACING))) { bRebuildShaders = true;}
 							ImGui::SameLine();
 							if(ImGui::RadioButton("fractional_even_spacing", &spacing, int(SpacingType::FRACTIONAL_EVEN_SPACING))) { bRebuildShaders = true; }
 							ImGui::SameLine();
@@ -548,12 +667,11 @@ namespace
 							if(ImGui::RadioButton("cw", &handedness, int(HandednessType::CW))) { bRebuildShaders = true; }
 						}
 						{
-							if(ImGui::RadioButton("isolines", &primitive, int(PrimitiveType::ISOLINES))) { bRebuildShaders = true; }
+							if (ImGui::RadioButton("isolines", &primitive, int(PrimitiveType::ISOLINES))){bRebuildShaders = true;}
 							ImGui::SameLine();
-							if(ImGui::RadioButton("triangles", &primitive, int(PrimitiveType::TRIANGLES))) { bRebuildShaders = true; }
+							if (ImGui::RadioButton("triangles", &primitive, int(PrimitiveType::TRIANGLES))){bRebuildShaders = true; }
 							ImGui::SameLine();
-							if(ImGui::RadioButton("quads", &primitive, int(PrimitiveType::QUADS))) { bRebuildShaders = true; }
-
+							if (ImGui::RadioButton("quads", &primitive, int(PrimitiveType::QUADS))){bRebuildShaders = true;}
 						}
 					}
 					ImGui::End();
@@ -572,6 +690,9 @@ namespace
 
 		glDeleteVertexArrays(1, &vao_tri);
 		glDeleteBuffers(1, &vbo_tri);
+
+		glDeleteVertexArrays(1, &vao_quads);
+		glDeleteBuffers(1, &vbo_quads);
 
 		glfwTerminate();
 	}
