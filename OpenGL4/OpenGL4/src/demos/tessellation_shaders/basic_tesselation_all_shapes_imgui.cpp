@@ -222,6 +222,7 @@ namespace
 		int spacing = SpacingType::EQUAL_SPACING;
 		int handedness = HandednessType::CCW;
 		bool bEnablePointMode = false;
+		bool bUseLargeValues = false;
 
 		auto buildShaders = [&]()
 		{
@@ -549,7 +550,7 @@ namespace
 		buildShaders();
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glPointSize(8.f); //default 1.0
+		glPointSize(4.f); //default 1.0
 
 		//uniforms
 		bool bUseSingleOuterTL = 1;
@@ -629,14 +630,17 @@ namespace
 					{
 						if(ImGui::Checkbox("layout(point_mode) in;", &bEnablePointMode)) { bRebuildShaders = true; }
 						ImGui::Checkbox("Use single tess level everywhere", &bUseSingleGlobalTL);
+						ImGui::SameLine();
+						ImGui::Checkbox("use large values", &bUseLargeValues);
+						float maxScale = 10.0f * ((bUseLargeValues) ? 10.f : 1.f);
 						if (bUseSingleGlobalTL)
 						{
-							ImGui::SliderFloat("Tess Level to use", &innerTessLevels[0], 0.f, 10.01f);
+							ImGui::SliderFloat("Tess Level to use", &innerTessLevels[0], 0.f, maxScale);
 						}
 						else
 						{
-							ImGui::SliderFloat("Inner Tess Levels 0", &innerTessLevels[0], 0.f, 10.f);
-							ImGui::SliderFloat("Inner Tess Levels 1", &innerTessLevels[1], 0.f, 10.f);
+							ImGui::SliderFloat("Inner Tess Levels 0", &innerTessLevels[0], 0.f, maxScale);
+							ImGui::SliderFloat("Inner Tess Levels 1", &innerTessLevels[1], 0.f, maxScale);
 
 							ImGui::Dummy({ 0.f, 10.0f }); //make some space between the sliders
 
@@ -644,14 +648,14 @@ namespace
 
 							if (bUseSingleOuterTL)
 							{
-								ImGui::SliderFloat("Outer Tess Levels 0", &outerTessLevels[0], 0.f, 10.f);
+								ImGui::SliderFloat("Outer Tess Levels 0", &outerTessLevels[0], 0.f, maxScale);
 							}
 							else
 							{
-								ImGui::SliderFloat("Outer Tess Levels 0", &outerTessLevels[0], 0.f, 10.f);
-								ImGui::SliderFloat("Outer Tess Levels 1", &outerTessLevels[1], 0.f, 10.f);
-								ImGui::SliderFloat("Outer Tess Levels 2", &outerTessLevels[2], 0.f, 10.f);
-								ImGui::SliderFloat("Outer Tess Levels 3", &outerTessLevels[3], 0.f, 10.f);
+								ImGui::SliderFloat("Outer Tess Levels 0", &outerTessLevels[0], 0.f, maxScale);
+								ImGui::SliderFloat("Outer Tess Levels 1", &outerTessLevels[1], 0.f, maxScale);
+								ImGui::SliderFloat("Outer Tess Levels 2", &outerTessLevels[2], 0.f, maxScale);
+								ImGui::SliderFloat("Outer Tess Levels 3", &outerTessLevels[3], 0.f, maxScale);
 							}
 						}
 						ImGui::Separator();
