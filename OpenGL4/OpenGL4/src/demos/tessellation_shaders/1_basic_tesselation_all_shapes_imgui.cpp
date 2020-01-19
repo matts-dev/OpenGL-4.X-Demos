@@ -88,7 +88,7 @@ namespace
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 		int windowWidth = 1200, windowHeight = 800;
-		GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "OpenglContext", nullptr, nullptr);
+		GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "OpenGLContext", nullptr, nullptr);
 		if (!window)
 		{
 			std::cerr << "failed to create window" << std::endl;
@@ -423,7 +423,7 @@ namespace
 					//implementation-wise, very similar to quad. gl_TessCoord.y is the offset of the line
 					vec3 top = mix(c, d, gl_TessCoord.x);
 					vec3 bottom = mix(a, b, gl_TessCoord.x);
-					return mix(top, bottom, gl_TessCoord.y);
+					return mix(bottom, top, gl_TessCoord.y);
 				}
 
 				void main(){
@@ -703,7 +703,7 @@ namespace
 	}
 }
 
-int main()
-{
-	true_main();
-}
+//int main()
+//{
+//	true_main();
+//}

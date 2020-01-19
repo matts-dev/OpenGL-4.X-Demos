@@ -102,7 +102,10 @@
     <ClCompile Include="src\demos\tessellation_shaders\0_basic_tesselation_imgui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\demos\tessellation_shaders\basic_tesselation_all_shapes_imgui.cpp">
+    <ClCompile Include="src\demos\tessellation_shaders\1_basic_tesselation_all_shapes_imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\tessellation_shaders\2_bezier_pointnormal_triangle_tessellation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
