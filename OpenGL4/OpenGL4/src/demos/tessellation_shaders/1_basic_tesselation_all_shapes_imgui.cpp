@@ -558,6 +558,8 @@ namespace
 		GLfloat innerTessLevels[] = { 3.0f, 3.0f };
 		GLfloat outerTessLevels[] = { 3.0f, 3.0f, 3.0f, 3.0f };
 
+		bool bCullBackFace = true;
+
 		const GLint bUseSingleOuterTL_ul = glGetUniformLocation(shaderProg, "bUseSingleOuterTL");
 		const GLint bUseSingleGlobalTL_ul = glGetUniformLocation(shaderProg, "bUseSingleGlobalTL");
 		const GLint innerTessLevel_ul = glGetUniformLocation(shaderProg, "innerTessLevel");
@@ -580,6 +582,16 @@ namespace
 
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+
+			if (bCullBackFace)
+			{
+				glEnable(GL_CULL_FACE);
+				glCullFace(GL_BACK);
+			}
+			else
+			{
+				glDisable(GL_CULL_FACE);
+			}
 
 			glUseProgram(shaderProg);
 
@@ -670,6 +682,8 @@ namespace
 							if(ImGui::RadioButton("ccw", &handedness, int(HandednessType::CCW))) { bRebuildShaders = true; }
 							ImGui::SameLine();
 							if(ImGui::RadioButton("cw", &handedness, int(HandednessType::CW))) { bRebuildShaders = true; }
+							ImGui::SameLine();
+							ImGui::Checkbox("Cull Back Face", &bCullBackFace);
 						}
 						{
 							if (ImGui::RadioButton("isolines", &primitive, int(PrimitiveType::ISOLINES))){bRebuildShaders = true;}

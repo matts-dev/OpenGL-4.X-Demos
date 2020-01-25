@@ -393,7 +393,6 @@ namespace
 							if (bUseSingleOuterTL)
 							{
 								ImGui::SliderFloat("Outer Tess Levels 0", &outerTessLevels[0], 0.f, 10.f);
-								ImGui::SliderFloat("Outer Tess Levels 0", &outerTessLevels[1], 0.f, 10.f);
 							}
 							else
 							{
