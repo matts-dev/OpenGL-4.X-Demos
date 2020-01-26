@@ -96,16 +96,19 @@
     <ClCompile Include="includes\imgui.1.69.gl\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\demos\tessellation_shaders\0_basic_tesselation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\demos\tessellation_shaders\0_basic_tesselation_imgui.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\demos\tessellation_shaders\1_basic_tesselation_all_shapes_imgui.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\demos\tessellation_shaders\2_bezier_pointnormal_triangle_tessellation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\tessellation_shaders\2.1_bezier_pointnormal_triangle_tessellation_with_geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\tessellation_shaders\1_basic_tessellation_all_shapes_imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\tessellation_shaders\0_basic_tessellation_imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\demos\tessellation_shaders\0_basic_tessellation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

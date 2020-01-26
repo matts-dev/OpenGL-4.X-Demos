@@ -227,7 +227,7 @@ if(anyValueNAN(value))\
 		GLuint fragShader = 0;
 		GLuint shaderProg = 0;
 
-		auto buildShaders = [&]() {
+		auto buildTessellationShaders = [&]() {
 			const char* vertex_shader_src = R"(
 					#version 410 core
 
@@ -542,7 +542,120 @@ if(anyValueNAN(value))\
 			glDeleteShader(tessEvaluationShader);
 			glDeleteShader(fragShader);
 		};
-		buildShaders();
+		buildTessellationShaders();
+
+
+		GLuint geometryShaderProgram = 0;
+		auto buildNormalDisplayGeometryShader = [&]() {
+			GLuint vertexShader = 0;
+			GLuint geometryShader = 0;
+			GLuint fragShader = 0;
+
+			const char* vertex_shader_src = R"(
+					#version 410 core
+
+					layout (location = 0) in vec3 position;				
+					layout (location = 1) in vec3 vertColor;				
+					layout (location = 2) in vec3 normal;
+
+					out InterfaceBlockVSOUT{
+						vec4 vertNormal;
+						vec4 vertPos;
+						vec3 vertColor;
+					} vs_out;
+				
+					void main(){
+						vs_out.vertColor = vertColor;
+						vs_out.vertPos = vec4(position, 1.0f);					
+						vs_out.vertNormal = normalize(vec4(normal,0));
+
+						gl_Position = vec4(position, 1.f);
+					}
+	
+				)";
+
+			vertShader = glCreateShader(GL_VERTEX_SHADER);
+			glShaderSource(vertShader, 1, &vertex_shader_src, nullptr);
+			glCompileShader(vertShader);
+			verifyShaderCompiled("vertex shader", vertShader);
+
+			const char* geometry_shader_src = R"(
+				#version 330 core
+		
+				layout (triangles) in;
+				layout (line_strip, max_vertices=256) out;	//just setting to 256 as not sure everything I will emit... would be nice to emit custom based on uniforms
+
+				in InterfaceBlockVSOUT{
+					vec4 vertNormal;
+					vec4 vertPos;
+					vec3 vertColor;
+				} vertices[];
+
+				out vec3 fragNormal_ws;
+				out vec3 fragPosition_ws;
+				out vec3 fragColor;
+
+				uniform mat4 model = mat4(1.f);
+				uniform mat4 view = mat4(1.f);
+				uniform mat4 projection = mat4(1.f);
+				uniform float normalDisplayLength = 1.0f;
+
+				void main(){
+
+					//hopefully compiler will loop-unroll this, otherwise it might be better to hand-write each vertex
+					for(int i = 0; i < 3; ++i)
+					{
+						//normal base
+						gl_Position = projection * view * model * gl_in[i].gl_Position;	
+						fragNormal_ws = vec3( inverse(transpose(model)) * vertices[i].vertNormal ); //don't use this for offset, 
+						fragPosition_ws = vec3(model * vertices[i].vertPos);
+						fragColor = vertices[i].vertColor;
+						EmitVertex();
+
+						//normal tip
+						fragPosition_ws = vec3(model * (vertices[i].vertPos + (vertices[i].vertNormal * normalDisplayLength)));
+						gl_Position = projection * view * vec4(fragPosition_ws, 1.0f);
+						EmitVertex();
+
+						EndPrimitive();
+					}
+				}
+			)";
+			geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+			glShaderSource(geometryShader, 1, &geometry_shader_src, nullptr);
+			glCompileShader(geometryShader);
+			verifyShaderCompiled("geometry shader", geometryShader);
+
+			const char* frag_shader_src = R"(
+					#version 410 core
+					out vec4 fragmentColor;
+				
+					in vec3 fragNormal_ws;
+					in vec3 fragPosition_ws;
+					in vec3 fragColor;
+
+					void main(){
+						fragmentColor = vec4(fragColor, 1.0f);
+					}
+				)";
+			fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+			glShaderSource(fragShader, 1, &frag_shader_src, nullptr);
+			glCompileShader(fragShader);
+			verifyShaderCompiled("fragment shader", fragShader);
+
+			if (geometryShaderProgram) { glDeleteProgram(geometryShaderProgram); }
+			geometryShaderProgram = glCreateProgram();
+			glAttachShader(geometryShaderProgram, vertShader);
+			glAttachShader(geometryShaderProgram, geometryShader);
+			glAttachShader(geometryShaderProgram, fragShader);
+			glLinkProgram(geometryShaderProgram);
+			verifyShaderLink(geometryShaderProgram);
+
+			glDeleteShader(vertShader);
+			glDeleteShader(geometryShader);
+			glDeleteShader(fragShader);
+		};
+		buildNormalDisplayGeometryShader();
 
 		//ui
 		bool bEnableDepth = 1;
@@ -563,20 +676,26 @@ if(anyValueNAN(value))\
 		const GLint projection_ul = glGetUniformLocation(shaderProg, "projection");
 		const GLint centerControlPointOffsetDivisor_ul = glGetUniformLocation(shaderProg, "centerControlPointOffsetDivisor");
 
-		
+		////////////////////////////////////////////////////////
+		// geometry shader display
+		////////////////////////////////////////////////////////
+		const GLint gs_view_ul = glGetUniformLocation(geometryShaderProgram, "view");
+		const GLint gs_projection_ul = glGetUniformLocation(geometryShaderProgram, "projection");
+		const GLint gs_normalDisplayLength = glGetUniformLocation(geometryShaderProgram, "normalDisplayLength");
+
 		struct QuatOrbitCam
 		{
 			glm::quat rotation{ 1.f,0,0,0 };
 			glm::vec3 u_axis{ 1.f,0.f,0.f };
 			glm::vec3 v_axis{ 0.f,1.f,0.f };
-			glm::vec3 w_axis{ 0.f,0.f,1.f  };
+			glm::vec3 w_axis{ 0.f,0.f,1.f };
 			float offsetDistance = 2.5f;
 			glm::vec3 pos{ 0.f, 0.f, offsetDistance };
 			float mouseSensitivity = 0.0125f;
 
 			void mouseMoved(const glm::vec2& deltaMouse)
 			{
-				glm::vec3 uvPlaneVec = u_axis* deltaMouse.x;
+				glm::vec3 uvPlaneVec = u_axis * deltaMouse.x;
 				uvPlaneVec += v_axis * deltaMouse.y;
 
 				float rotationMagnitude = glm::length(uvPlaneVec);
@@ -592,7 +711,7 @@ if(anyValueNAN(value))\
 				glm::mat4 transform = glm::toMat4(rotation);
 				u_axis = glm::normalize(glm::vec3(transform * glm::vec4{ 1,0, 0,0 })); //#optimize the normalization of the basis may be superfluous, but needs testing due to floating point error
 				v_axis = glm::normalize(glm::vec3(transform * glm::vec4{ 0,1, 0,0 }));
-				w_axis = glm::normalize(glm::vec3(transform * glm::vec4{ 0,0,-1,0})); 
+				w_axis = glm::normalize(glm::vec3(transform * glm::vec4{ 0,0,-1,0 }));
 				NAN_BREAK(u_axis);
 				NAN_BREAK(v_axis);
 				NAN_BREAK(w_axis);
@@ -601,9 +720,9 @@ if(anyValueNAN(value))\
 				glm::vec3 front_offset = w_axis * offsetDistance;
 				pos = /*vec3(0,0,0) + */ front_offset;
 			}
-			glm::mat4 getView() 
-			{ 
-				return glm::lookAt(pos, glm::vec3(0.f), v_axis); 
+			glm::mat4 getView()
+			{
+				return glm::lookAt(pos, glm::vec3(0.f), v_axis);
 			}
 		};
 		QuatOrbitCam camera = {};
@@ -625,7 +744,7 @@ if(anyValueNAN(value))\
 			if (bRebuildShaders)
 			{
 				bRebuildShaders = false;
-				buildShaders(); //do not rebuild shaders during GUI rendering.
+				buildTessellationShaders(); //do not rebuild shaders during GUI rendering.
 			}
 			static bool bMiddleBtnPressed = false;
 			if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE))
@@ -671,9 +790,21 @@ if(anyValueNAN(value))\
 			glUniformMatrix4fv(view_ul, 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
 
-			
+
 			glPatchParameteri(GL_PATCH_VERTICES, 3); //doesn't need to be done every frame, doing here for demo clarity
 			glDrawArrays(GL_PATCHES, 0, 3);
+
+			{ 
+				////////////////////////////////////////////////////////
+				// Use geometry shader debug visuals
+				////////////////////////////////////////////////////////
+				glUseProgram(geometryShaderProgram);
+				glBindVertexArray(vao);
+				glUniformMatrix4fv(gs_view_ul, 1, GL_FALSE, glm::value_ptr(view));
+				glUniformMatrix4fv(gs_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+			}
+
 
 			{ //interactive UI
 				ImGui_ImplOpenGL3_NewFrame();
@@ -689,14 +820,14 @@ if(anyValueNAN(value))\
 						ImGui::Checkbox("render polygons", &bPolygonMode);
 						if (ImGui::Checkbox("layout(point_mode) in;", &bEnablePointMode)) { bRebuildShaders = true; }
 
-						if(ImGui::SliderFloat("normal adjustment", &sphereOffset, 0.001f, 5.0f)) { bRegenerateVerts = true; }
+						if (ImGui::SliderFloat("normal adjustment", &sphereOffset, 0.001f, 5.0f)) { bRegenerateVerts = true; }
 						ImGui::SliderFloat("center CP offset divisor", &centerControlPointOffsetDivisor, 0.05f, 2.f);
 
 						ImGui::Checkbox("Use single tess level everywhere", &bUseSingleGlobalTL);
 						ImGui::SameLine();
 						ImGui::Checkbox("use large values", &bUseLargeValues);
 						float maxScale = 10.0f * ((bUseLargeValues) ? 10.f : 1.f);
-						
+
 						if (bUseSingleGlobalTL)
 						{
 							ImGui::SliderFloat("Tess Level to use", &innerTessLevels[0], 0.f, maxScale);
@@ -753,7 +884,7 @@ if(anyValueNAN(value))\
 //	http://ogldev.atspace.co.uk/www/tutorial31/tutorial31.html
 
 
-//int main()
-//{
-//	true_main();
-//}
+int main()
+{
+	true_main();
+}
