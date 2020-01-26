@@ -153,6 +153,7 @@ if(anyValueNAN(value))\
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		float sphereOffset = 1.0f;  //the closer this is to the tri points, the more different the normals will be.
+		bool bConvex = true;
 		GLuint vao = 0;
 		GLuint vbo = 0;
 		auto regenerateVerts = [&]()
@@ -170,10 +171,27 @@ if(anyValueNAN(value))\
 					Vert{	glm::vec3{-0.5f, 0.866f, 0.0f},			glm::vec3{0.f,1.f,0.f},		glm::vec3{0.f, 0.f, 1.f}},
 					Vert{	glm::vec3{-0.5f, -0.866f, 0.0f},		glm::vec3{0.f,0.f,1.f},		glm::vec3{0.f, 0.f, 1.f}}
 			};
-			glm::vec3 simSphereCenter{ 0.f, 0.f, -sphereOffset };
-			verts[0].normal = glm::normalize(verts[0].pos - simSphereCenter);
-			verts[1].normal = glm::normalize(verts[1].pos - simSphereCenter);
-			verts[2].normal = glm::normalize(verts[2].pos - simSphereCenter);
+			if (bConvex)
+			{
+				//treat vertices as if they are points on a sphere and generate normal from an imaginary sphere center
+				glm::vec3 simSphereCenter{ 0.f, 0.f, -sphereOffset};
+				verts[0].normal = glm::normalize(verts[0].pos - simSphereCenter);
+				verts[1].normal = glm::normalize(verts[1].pos - simSphereCenter);
+				verts[2].normal = glm::normalize(verts[2].pos - simSphereCenter);
+			}
+			else
+			{
+				//generate normals towards an imaginary point at the center of the triangle
+				glm::vec3 a = verts[0].pos, b = verts[1].pos, c = verts[2].pos;
+
+				glm::vec3 offsetCenter = 0.333f * a + 0.333f * b + 0.333f * c;
+				glm::vec3 flatNormal = glm::normalize(glm::cross(b - a, c - a));
+				offsetCenter += flatNormal * sphereOffset; //use same parameter to control concaveness of the demo
+
+				verts[0].normal = glm::normalize(offsetCenter - verts[0].pos);
+				verts[1].normal = glm::normalize(offsetCenter - verts[1].pos);
+				verts[2].normal = glm::normalize(offsetCenter - verts[2].pos);
+			}
 
 			if (vao) { glDeleteVertexArrays(1, &vao); }
 			glGenVertexArrays(1, &vao);
@@ -221,7 +239,7 @@ if(anyValueNAN(value))\
 		bool bEnablePointMode = false;
 		bool bUseLargeValues = false;
 
-		GLuint vertShader = 0;
+		GLuint vertexShader = 0;
 		GLuint tessControlShader = 0;
 		GLuint tessEvaluationShader = 0;
 		GLuint fragShader = 0;
@@ -248,10 +266,10 @@ if(anyValueNAN(value))\
 					}
 				)";
 
-			vertShader = glCreateShader(GL_VERTEX_SHADER);
-			glShaderSource(vertShader, 1, &vertex_shader_src, nullptr);
-			glCompileShader(vertShader);
-			verifyShaderCompiled("vertex shader", vertShader);
+			vertexShader = glCreateShader(GL_VERTEX_SHADER);
+			glShaderSource(vertexShader, 1, &vertex_shader_src, nullptr);
+			glCompileShader(vertexShader);
+			verifyShaderCompiled("vertex shader", vertexShader);
 
 
 			//--------provided input------------
@@ -530,28 +548,24 @@ if(anyValueNAN(value))\
 
 			if (shaderProg) { glDeleteProgram(shaderProg); }
 			shaderProg = glCreateProgram();
-			glAttachShader(shaderProg, vertShader);
+			glAttachShader(shaderProg, vertexShader);
 			glAttachShader(shaderProg, tessControlShader);
 			glAttachShader(shaderProg, tessEvaluationShader);
 			glAttachShader(shaderProg, fragShader);
 			glLinkProgram(shaderProg);
 			verifyShaderLink(shaderProg);
 
-			glDeleteShader(vertShader);
+			glDeleteShader(vertexShader);
 			glDeleteShader(tessControlShader);
 			glDeleteShader(tessEvaluationShader);
 			glDeleteShader(fragShader);
 		};
 		buildTessellationShaders();
 
-
-		GLuint geometryShaderProgram = 0;
-		auto buildNormalDisplayGeometryShader = [&]() {
-			GLuint vertexShader = 0;
-			GLuint geometryShader = 0;
-			GLuint fragShader = 0;
-
-			const char* vertex_shader_src = R"(
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// shader that displays normals at verts
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		const char* normalDisplay_vs_src = R"(
 					#version 410 core
 
 					layout (location = 0) in vec3 position;				
@@ -574,16 +588,11 @@ if(anyValueNAN(value))\
 	
 				)";
 
-			vertShader = glCreateShader(GL_VERTEX_SHADER);
-			glShaderSource(vertShader, 1, &vertex_shader_src, nullptr);
-			glCompileShader(vertShader);
-			verifyShaderCompiled("vertex shader", vertShader);
-
-			const char* geometry_shader_src = R"(
+		const char* normalDisplay_gs_src = R"(
 				#version 330 core
 		
 				layout (triangles) in;
-				layout (line_strip, max_vertices=256) out;	//just setting to 256 as not sure everything I will emit... would be nice to emit custom based on uniforms
+				layout (line_strip, max_vertices=6) out;
 
 				in InterfaceBlockVSOUT{
 					vec4 vertNormal;
@@ -593,12 +602,12 @@ if(anyValueNAN(value))\
 
 				out vec3 fragNormal_ws;
 				out vec3 fragPosition_ws;
-				out vec3 fragColor;
+				out vec4 fragColor;
 
 				uniform mat4 model = mat4(1.f);
 				uniform mat4 view = mat4(1.f);
 				uniform mat4 projection = mat4(1.f);
-				uniform float normalDisplayLength = 1.0f;
+				uniform float normalDisplayLength = 0.5f;
 
 				void main(){
 
@@ -609,7 +618,7 @@ if(anyValueNAN(value))\
 						gl_Position = projection * view * model * gl_in[i].gl_Position;	
 						fragNormal_ws = vec3( inverse(transpose(model)) * vertices[i].vertNormal ); //don't use this for offset, 
 						fragPosition_ws = vec3(model * vertices[i].vertPos);
-						fragColor = vertices[i].vertColor;
+						fragColor = vec4(vertices[i].vertColor,1.f);
 						EmitVertex();
 
 						//normal tip
@@ -621,50 +630,328 @@ if(anyValueNAN(value))\
 					}
 				}
 			)";
-			geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
-			glShaderSource(geometryShader, 1, &geometry_shader_src, nullptr);
-			glCompileShader(geometryShader);
-			verifyShaderCompiled("geometry shader", geometryShader);
 
-			const char* frag_shader_src = R"(
+		const char* normalDisplay_fs_src = R"(
 					#version 410 core
 					out vec4 fragmentColor;
 				
 					in vec3 fragNormal_ws;
 					in vec3 fragPosition_ws;
-					in vec3 fragColor;
+					in vec4 fragColor;
 
 					void main(){
-						fragmentColor = vec4(fragColor, 1.0f);
+						fragmentColor = fragColor;
 					}
 				)";
+
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// shader that display plane quads
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		const char* planeDisplay_gs_src = R"(
+				#version 330 core
+		
+				layout (triangles) in;
+				layout (triangle_strip, max_vertices=12) out; //4 verts for each vertex
+
+				in InterfaceBlockVSOUT{
+					vec4 vertNormal;
+					vec4 vertPos;
+					vec3 vertColor;
+				} vertices[];
+
+				out vec3 fragNormal_ws;
+				out vec3 fragPosition_ws;
+				out vec4 fragColor;
+
+				uniform mat4 model = mat4(1.f);
+				uniform mat4 view = mat4(1.f);
+				uniform mat4 projection = mat4(1.f);
+				uniform float normalDisplayLength = 0.5f;
+				uniform float planeSize = 0.25f;
+
+				void main(){
+
+					mat4 project_view = projection * view;
+
+					vec3 triCenter = vec3(model * (0.333*vertices[0].vertPos + 0.333*vertices[1].vertPos + 0.333*vertices[2].vertPos));
+
+					for(int i = 0; i < 3; ++i)
+					{
+						fragColor = vec4(vertices[i].vertColor, 0.5f);
+						vec3 vert_center_ws = vec3(model*vertices[i].vertPos);
+
+						fragNormal_ws = vec3( inverse(transpose(model)) * vertices[i].vertNormal );
+						//vec3 temp = getDifferentVector(fragNormal_ws);
+						vec3 temp = triCenter - vert_center_ws;
+						vec3 u_ws_n = normalize(cross(fragNormal_ws, temp));
+						vec3 v_ws_n = normalize(cross(fragNormal_ws, u_ws_n));
+						
+						vec3 vert_a =  vert_center_ws + (-u_ws_n * planeSize) + (-v_ws_n * planeSize);
+						vec3 vert_b =  vert_center_ws + (u_ws_n * planeSize) + (-v_ws_n * planeSize);
+						vec3 vert_c =  vert_center_ws + (-u_ws_n * planeSize) + (v_ws_n * planeSize);
+						vec3 vert_d =  vert_center_ws + (u_ws_n * planeSize) + (v_ws_n * planeSize);
+
+						gl_Position = project_view * vec4(vert_a, 1.0f);	
+						fragPosition_ws = vert_a;
+						EmitVertex();
+
+						gl_Position = project_view * vec4(vert_b, 1.0f);	
+						fragPosition_ws = vert_b;
+						EmitVertex();
+
+						gl_Position = project_view * vec4(vert_c, 1.0f);	
+						fragPosition_ws = vert_c;
+						EmitVertex();
+
+						gl_Position = project_view * vec4(vert_d, 1.0f);	
+						fragPosition_ws = vert_d;
+						EmitVertex();
+
+						EndPrimitive();
+					}
+				}
+			)";
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// control point generator
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		const char* controlPointDisplay_gs_src = R"(
+				#version 330 core
+		
+				layout (triangles) in;
+				layout (points, max_vertices=10) out; //4 verts for each vertex
+
+				in InterfaceBlockVSOUT{
+					vec4 vertNormal;
+					vec4 vertPos;
+					vec3 vertColor;
+				} vertices[];
+
+				out vec3 fragNormal_ws;
+				out vec3 fragPosition_ws;
+				out vec4 fragColor;
+
+				uniform mat4 model = mat4(1.f);
+				uniform mat4 view = mat4(1.f);
+				uniform mat4 projection = mat4(1.f);
+				uniform float centerControlPointOffsetDivisor = 2.0f;
+
+				vec3 projectPntToNormalPlane(vec3 pnt, vec3 normal, vec3 normalPnt)
+				{
+					vec3 toPnt_v = pnt - normalPnt;
+					vec3 proj_v = dot(toPnt_v, normal) * normal; //projection will face wrong direction
+					vec3 finalPnt = pnt + -proj_v; //not this can be simplified to (pnt - proj)
+					return finalPnt;
+				}
+
+				//mirroring what is done in the tessellation shader for display purposes.
+				struct ControlPoints
+				{
+					vec3 w_pos_300;
+					vec3 w_pos_210;
+					vec3 w_pos_201;
+
+					vec3 w_pos_030;
+					vec3 w_pos_120;
+					vec3 w_pos_021;
+
+					vec3 w_pos_003;
+					vec3 w_pos_012;
+					vec3 w_pos_102;
+
+					vec3 w_pos_111;	//the center point
+
+					vec3 normal[3];
+					vec3 color[3]; //unused... but mirroring structure in tessellation shader for clarity
+				};
+				ControlPoints points;
+
+				void main(){
+
+					/////////////////////////////////////
+					// from tessellation control shader
+					/////////////////////////////////////
+
+					//set the corner positions
+					points.w_pos_300 = vec3(model * vertices[0].vertPos);
+					points.w_pos_030 = vec3(model * vertices[1].vertPos);
+					points.w_pos_003 = vec3(model * vertices[2].vertPos);
+
+					mat4 normalModel = inverse(transpose(model));
+					points.normal[0] = vec3(normalModel * vertices[0].vertNormal);
+					points.normal[1] = vec3(normalModel * vertices[1].vertNormal);
+					points.normal[2] = vec3(normalModel * vertices[2].vertNormal);
+
+					//edge is associated with vertex opposite from it. I defined this in CCW order. edges vecs point toward last point.
+					vec3 edge_030_to_003 = points.w_pos_003 - points.w_pos_030;
+					vec3 edge_003_to_300 = points.w_pos_300 - points.w_pos_003;
+					vec3 edge_300_to_030 = points.w_pos_030 - points.w_pos_300;
+
+					points.w_pos_210 = points.w_pos_300 + (1.0/3.0f)*edge_300_to_030;
+					points.w_pos_201 = points.w_pos_300 - (1.0/3.0f)*(edge_003_to_300); //negate to flip edge
+					
+					points.w_pos_021 = points.w_pos_030 + (1.0/3.0f)*(edge_030_to_003);
+					points.w_pos_120 = points.w_pos_030 - (1.0/3.0f)*(edge_300_to_030); //distribute -1 out of `pnt + (2/3)(-1edge)`
+
+					points.w_pos_102 = points.w_pos_003 + (1.0/3.0f)*(edge_003_to_300);
+					points.w_pos_012 = points.w_pos_003 - (1.0/3.0f)*(edge_030_to_003);
+	
+					//projection onto planes created by normals at corner vertices
+					points.w_pos_210 = projectPntToNormalPlane(points.w_pos_210, points.normal[0], points.w_pos_300);
+					points.w_pos_201 = projectPntToNormalPlane(points.w_pos_201, points.normal[0], points.w_pos_300);
+					
+					points.w_pos_021 = projectPntToNormalPlane(points.w_pos_021, points.normal[1], points.w_pos_030);
+					points.w_pos_120 = projectPntToNormalPlane(points.w_pos_120, points.normal[1], points.w_pos_030);
+
+					points.w_pos_102 = projectPntToNormalPlane(points.w_pos_102, points.normal[2], points.w_pos_003);
+					points.w_pos_012 = projectPntToNormalPlane(points.w_pos_012, points.normal[2], points.w_pos_003);
+
+					vec3 triCenter = (points.w_pos_300 + points.w_pos_030 + points.w_pos_003) / 3.0f; //barycentric coordiantes to get center
+					points.w_pos_111 = (points.w_pos_210 + points.w_pos_201
+										+ points.w_pos_021 + points.w_pos_120
+										+ points.w_pos_102 + points.w_pos_012) / 6.f; //average all the generated cps
+					points.w_pos_111 += (points.w_pos_111 - triCenter) / centerControlPointOffsetDivisor; // 2.0f;	//seems ad-hoc to take half of the vector upward from tri.
+					
+					///////////////////////////////////
+					// geometry shader point display
+					///////////////////////////////////
+
+					mat4 project_view = projection * view;
+
+					
+					//generate flat normal
+					vec4 a = vertices[0].vertPos, b = vertices[1].vertPos, c = vertices[2].vertPos;
+					vec3 flatNormal = normalize(cross(vec3(b - a), vec3(c - a)));
+
+					fragNormal_ws = vec3(inverse(transpose(model)) * vec4(flatNormal, 0.f));
+
+					/////////////////////////
+					//original verts
+					/////////////////////////
+					fragColor = vec4(1.0f, 0.f, 0.f, 1.0f);
+		
+					fragColor = vec4(1.0f, 0.f, 0.f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_300, 1.0f);	
+					fragPosition_ws = points.w_pos_300;
+					EmitVertex();
+
+					fragColor = vec4(0.0f, 1.f, 0.f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_030, 1.0f);	
+					fragPosition_ws = points.w_pos_030;
+					EmitVertex();
+
+					fragColor = vec4(0.0f, 0.f, 1.f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_003, 1.0f);	
+					fragPosition_ws = points.w_pos_003;
+					EmitVertex();
+
+					/////////////////////////
+					// intermediate verts
+					/////////////////////////
+
+					fragColor = vec4(0.65f, 0.35f, 0.f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_210, 1.0f);	
+					fragPosition_ws = points.w_pos_210;
+					EmitVertex();
+
+					fragColor = vec4(0.65f, 0.f, 0.35f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_201, 1.0f);	
+					fragPosition_ws = points.w_pos_201;
+					EmitVertex();
+
+
+					fragColor = vec4(0.0f, 0.35f, 0.65f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_012, 1.0f);	
+					fragPosition_ws = points.w_pos_012;
+					EmitVertex();
+
+					fragColor = vec4(0.35f, 0.0f, 0.65f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_102, 1.0f);	
+					fragPosition_ws = points.w_pos_102;
+					EmitVertex();
+
+					fragColor = vec4(0.35f, 0.65f, 0.f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_120, 1.0f);	
+					fragPosition_ws = points.w_pos_120;
+					EmitVertex();
+
+					fragColor = vec4(0.0f, 0.65f, 0.35f, 1.0f);
+					gl_Position = project_view * vec4(points.w_pos_021, 1.0f);	
+					fragPosition_ws = points.w_pos_021;
+					EmitVertex();
+
+					//////////////////////
+					//center cp
+					//////////////////////
+					fragColor = vec4(0.33f, 0.34f, 0.33f, 1.0f);
+
+					gl_Position = project_view * vec4(points.w_pos_111, 1.0f);	
+					fragPosition_ws = points.w_pos_111;
+					EmitVertex();
+
+					EndPrimitive();
+				}
+			)";
+
+
+		auto buildGeometryShader = [](const char* vs, const char* gs, const char* fs, GLuint& outProg) {
+			GLuint vertexShader = 0;
+			GLuint geometryShader = 0;
+			GLuint fragShader = 0;
+
+			vertexShader = glCreateShader(GL_VERTEX_SHADER);
+			glShaderSource(vertexShader, 1, &vs, nullptr);
+			glCompileShader(vertexShader);
+			verifyShaderCompiled("vertex shader", vertexShader);
+
+			geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+			glShaderSource(geometryShader, 1, &gs, nullptr);
+			glCompileShader(geometryShader);
+			verifyShaderCompiled("geometry shader", geometryShader);
+
 			fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-			glShaderSource(fragShader, 1, &frag_shader_src, nullptr);
+			glShaderSource(fragShader, 1, &fs, nullptr);
 			glCompileShader(fragShader);
 			verifyShaderCompiled("fragment shader", fragShader);
 
-			if (geometryShaderProgram) { glDeleteProgram(geometryShaderProgram); }
-			geometryShaderProgram = glCreateProgram();
-			glAttachShader(geometryShaderProgram, vertShader);
-			glAttachShader(geometryShaderProgram, geometryShader);
-			glAttachShader(geometryShaderProgram, fragShader);
-			glLinkProgram(geometryShaderProgram);
-			verifyShaderLink(geometryShaderProgram);
+			if (outProg) { glDeleteProgram(outProg); }
+			outProg = glCreateProgram();
+			glAttachShader(outProg, vertexShader);
+			glAttachShader(outProg, geometryShader);
+			glAttachShader(outProg, fragShader);
+			glLinkProgram(outProg);
+			verifyShaderLink(outProg);
 
-			glDeleteShader(vertShader);
+			glDeleteShader(vertexShader);
 			glDeleteShader(geometryShader);
 			glDeleteShader(fragShader);
 		};
-		buildNormalDisplayGeometryShader();
+		GLuint normalDisplayShader = 0;
+		buildGeometryShader(normalDisplay_vs_src, normalDisplay_gs_src, normalDisplay_fs_src, normalDisplayShader);
+
+		GLuint normalPlaneDisplayShader = 0;
+		buildGeometryShader(normalDisplay_vs_src, planeDisplay_gs_src, normalDisplay_fs_src, normalPlaneDisplayShader);
+
+		GLuint controlPointShader = 0;
+		buildGeometryShader(normalDisplay_vs_src, controlPointDisplay_gs_src, normalDisplay_fs_src, controlPointShader);
 
 		//ui
 		bool bEnableDepth = 1;
 		bool bPolygonMode = 0;
+		bool bShowVertNormals = 0;
+		bool bShowNormalPlanes = 0;
+		bool bShowControlPoints = 0;
+		float normalPlaneSize = 0.25f;
+		float normalDisplayLength = 0.5f;
+		const GLint planeSize_ul = glGetUniformLocation(normalPlaneDisplayShader, "planeSize");
+		
 
 		//uniforms
 		bool bUseSingleOuterTL = 1;
 		bool bUseSingleGlobalTL = 1;
 		float centerControlPointOffsetDivisor = 2.0f;
+		float controlPointSize = 8.0f;
 		GLfloat innerTessLevels[] = { 3.0f, 3.0f };
 		GLfloat outerTessLevels[] = { 3.0f, 3.0f, 3.0f, 3.0f };
 
@@ -677,11 +964,24 @@ if(anyValueNAN(value))\
 		const GLint centerControlPointOffsetDivisor_ul = glGetUniformLocation(shaderProg, "centerControlPointOffsetDivisor");
 
 		////////////////////////////////////////////////////////
-		// geometry shader display
+		// normal shader display
 		////////////////////////////////////////////////////////
-		const GLint gs_view_ul = glGetUniformLocation(geometryShaderProgram, "view");
-		const GLint gs_projection_ul = glGetUniformLocation(geometryShaderProgram, "projection");
-		const GLint gs_normalDisplayLength = glGetUniformLocation(geometryShaderProgram, "normalDisplayLength");
+		const GLint gs_view_ul = glGetUniformLocation(normalDisplayShader, "view");
+		const GLint gs_projection_ul = glGetUniformLocation(normalDisplayShader, "projection");
+		const GLint gs_normalDisplayLength_ul = glGetUniformLocation(normalDisplayShader, "normalDisplayLength");
+
+		////////////////////////////////////////////////////////
+		// normal shader display
+		////////////////////////////////////////////////////////
+		const GLint gs_plane_view_ul =		 glGetUniformLocation(normalPlaneDisplayShader, "view");
+		const GLint gs_plane_projection_ul = glGetUniformLocation(normalPlaneDisplayShader, "projection");
+
+		////////////////////////////////////////////////////////
+		// control point display shader
+		////////////////////////////////////////////////////////
+		const GLint gs_cp_view_ul =		  glGetUniformLocation(controlPointShader, "view");
+		const GLint gs_cp_projection_ul = glGetUniformLocation(controlPointShader, "projection");
+		const GLint gs_cp_centerControlPointOffsetDivisor_ul = glGetUniformLocation(controlPointShader, "centerControlPointOffsetDivisor");
 
 		struct QuatOrbitCam
 		{
@@ -715,7 +1015,11 @@ if(anyValueNAN(value))\
 				NAN_BREAK(u_axis);
 				NAN_BREAK(v_axis);
 				NAN_BREAK(w_axis);
-
+					
+				update();
+			}
+			void update()
+			{
 				//fix on point (0,0,0)
 				glm::vec3 front_offset = w_axis * offsetDistance;
 				pos = /*vec3(0,0,0) + */ front_offset;
@@ -729,6 +1033,9 @@ if(anyValueNAN(value))\
 
 		bool bRegenerateVerts = false;
 		bool bRebuildShaders = false;
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		while (!glfwWindowShouldClose(window))
 		{
@@ -798,13 +1105,36 @@ if(anyValueNAN(value))\
 				////////////////////////////////////////////////////////
 				// Use geometry shader debug visuals
 				////////////////////////////////////////////////////////
-				glUseProgram(geometryShaderProgram);
+				glUseProgram(normalDisplayShader);
 				glBindVertexArray(vao);
 				glUniformMatrix4fv(gs_view_ul, 1, GL_FALSE, glm::value_ptr(view));
 				glUniformMatrix4fv(gs_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
-				glDrawArrays(GL_TRIANGLES, 0, 3);
-			}
+				glUniform1f(gs_normalDisplayLength_ul, normalDisplayLength);
+				if (bShowVertNormals) { glDrawArrays(GL_TRIANGLES, 0, 3); }
 
+				////////////////////////////////////////////////////////
+				// render normal's planes at verts
+				////////////////////////////////////////////////////////
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				glUseProgram(normalPlaneDisplayShader);
+				glUniform1f(planeSize_ul, normalPlaneSize);
+				glBindVertexArray(vao);
+				glUniformMatrix4fv(gs_plane_view_ul, 1, GL_FALSE, glm::value_ptr(view));
+				glUniformMatrix4fv(gs_plane_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
+				if (bShowNormalPlanes) {glDrawArrays(GL_TRIANGLES, 0, 3);}
+
+				////////////////////////////////////////////////////////
+				// Render control points
+				////////////////////////////////////////////////////////
+				glUseProgram(controlPointShader);
+				glBindVertexArray(vao);
+				glUniformMatrix4fv(gs_cp_view_ul, 1, GL_FALSE, glm::value_ptr(view));
+				glUniformMatrix4fv(gs_cp_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
+				glUniform1f(gs_cp_centerControlPointOffsetDivisor_ul, centerControlPointOffsetDivisor);
+				glPointSize(controlPointSize);
+				if (bShowControlPoints) { glDrawArrays(GL_TRIANGLES, 0, 3); }
+				glPointSize(1.0f);
+			}
 
 			{ //interactive UI
 				ImGui_ImplOpenGL3_NewFrame();
@@ -815,13 +1145,37 @@ if(anyValueNAN(value))\
 					ImGuiWindowFlags flags = 0;
 					ImGui::Begin("OpenGL Tweaker (imgui library)", nullptr, flags);
 					{
+						if (ImGui::SliderFloat("camera distance", &camera.offsetDistance, 0.25f, 5.f)) { camera.update(); }
+						if (ImGui::Checkbox("convex", &bConvex)) { bRegenerateVerts = true; }
+						ImGui::SameLine();
+						if (ImGui::SliderFloat("normal adjustment", &sphereOffset, 0.001f, 5.0f)) { bRegenerateVerts = true; }
+
+						//below invalides the point normal algorithm
+						ImGui::SliderFloat("center CP offset divisor", &centerControlPointOffsetDivisor, 0.05f, 2.f);
+
+						ImGui::Checkbox("vert normals", &bShowVertNormals);
+						ImGui::SameLine();
+						ImGui::Checkbox("normal planes", &bShowNormalPlanes);
+						ImGui::SameLine();
+						ImGui::Checkbox("control points", &bShowControlPoints);
+						if (bShowVertNormals)
+						{
+							ImGui::SliderFloat("normal display length", &normalDisplayLength, 0.001f, 1.0f);
+						}
+						if (bShowNormalPlanes)
+						{
+							ImGui::SliderFloat("normal plane size", &normalPlaneSize, 0.001f, 2.0f);
+						}
+						if (bShowControlPoints)
+						{
+							ImGui::SliderFloat("control point size ", &controlPointSize, 1.0f, 16.0f);
+						}
+
+						ImGui::Dummy({ 0.f, 10.0f }); //make some space
 						ImGui::Checkbox("enable depth test", &bEnableDepth);
 						ImGui::SameLine();
 						ImGui::Checkbox("render polygons", &bPolygonMode);
 						if (ImGui::Checkbox("layout(point_mode) in;", &bEnablePointMode)) { bRebuildShaders = true; }
-
-						if (ImGui::SliderFloat("normal adjustment", &sphereOffset, 0.001f, 5.0f)) { bRegenerateVerts = true; }
-						ImGui::SliderFloat("center CP offset divisor", &centerControlPointOffsetDivisor, 0.05f, 2.f);
 
 						ImGui::Checkbox("Use single tess level everywhere", &bUseSingleGlobalTL);
 						ImGui::SameLine();
@@ -861,6 +1215,8 @@ if(anyValueNAN(value))\
 							ImGui::SameLine();
 							if (ImGui::RadioButton("fractional_odd_spacing", &spacing, int(SpacingType::FRACTIONAL_ODD_SPACING))) { bRebuildShaders = true; }
 						}
+
+
 					}
 					ImGui::End();
 				}
@@ -876,6 +1232,11 @@ if(anyValueNAN(value))\
 		glfwTerminate();
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
+
+		glDeleteProgram(shaderProg);
+		glDeleteProgram(normalDisplayShader);
+		glDeleteProgram(normalPlaneDisplayShader);
+		glDeleteProgram(controlPointShader);
 	}
 }
 
