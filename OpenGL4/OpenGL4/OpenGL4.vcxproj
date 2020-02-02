@@ -86,7 +86,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc140-mt.lib;opengl32.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -110,7 +110,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc140-mt.lib;opengl32.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -153,6 +153,7 @@
     <ClCompile Include="src\demos\tessellation_shaders\1_basic_tessellation_all_shapes_imgui.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\2.1_bezier_pointnormal_triangle_tessellation_with_geometry.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\2_bezier_pointnormal_triangle_tessellation.cpp" />
+    <ClCompile Include="src\demos\tessellation_shaders\3_model_tessellation.cpp" />
     <ClCompile Include="src\old_utils\CameraFPS.cpp" />
     <ClCompile Include="src\old_utils\nu_utils.cpp" />
     <ClCompile Include="src\old_utils\Shader.cpp" />
@@ -162,9 +163,47 @@
     <ClCompile Include="third_party_src\stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Library Include="static_lib\assimp-vc140-mt.lib" />
     <Library Include="static_lib\glfw3.lib" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="includes\assimp\ai_assert.h" />
+    <ClInclude Include="includes\assimp\anim.h" />
+    <ClInclude Include="includes\assimp\camera.h" />
+    <ClInclude Include="includes\assimp\cexport.h" />
+    <ClInclude Include="includes\assimp\cfileio.h" />
+    <ClInclude Include="includes\assimp\cimport.h" />
+    <ClInclude Include="includes\assimp\color4.h" />
+    <ClInclude Include="includes\assimp\Compiler\poppack1.h" />
+    <ClInclude Include="includes\assimp\Compiler\pstdint.h" />
+    <ClInclude Include="includes\assimp\Compiler\pushpack1.h" />
+    <ClInclude Include="includes\assimp\config.h" />
+    <ClInclude Include="includes\assimp\DefaultLogger.hpp" />
+    <ClInclude Include="includes\assimp\defs.h" />
+    <ClInclude Include="includes\assimp\Exporter.hpp" />
+    <ClInclude Include="includes\assimp\Importer.hpp" />
+    <ClInclude Include="includes\assimp\importerdesc.h" />
+    <ClInclude Include="includes\assimp\IOStream.hpp" />
+    <ClInclude Include="includes\assimp\IOSystem.hpp" />
+    <ClInclude Include="includes\assimp\light.h" />
+    <ClInclude Include="includes\assimp\Logger.hpp" />
+    <ClInclude Include="includes\assimp\LogStream.hpp" />
+    <ClInclude Include="includes\assimp\material.h" />
+    <ClInclude Include="includes\assimp\matrix3x3.h" />
+    <ClInclude Include="includes\assimp\matrix4x4.h" />
+    <ClInclude Include="includes\assimp\mesh.h" />
+    <ClInclude Include="includes\assimp\metadata.h" />
+    <ClInclude Include="includes\assimp\NullLogger.hpp" />
+    <ClInclude Include="includes\assimp\port\AndroidJNI\AndroidJNIIOSystem.h" />
+    <ClInclude Include="includes\assimp\postprocess.h" />
+    <ClInclude Include="includes\assimp\ProgressHandler.hpp" />
+    <ClInclude Include="includes\assimp\quaternion.h" />
+    <ClInclude Include="includes\assimp\scene.h" />
+    <ClInclude Include="includes\assimp\texture.h" />
+    <ClInclude Include="includes\assimp\types.h" />
+    <ClInclude Include="includes\assimp\vector2.h" />
+    <ClInclude Include="includes\assimp\vector3.h" />
+    <ClInclude Include="includes\assimp\version.h" />
     <ClInclude Include="includes\glad\glad.h" />
     <ClInclude Include="includes\GLFW\glfw3.h" />
     <ClInclude Include="includes\GLFW\glfw3native.h" />
@@ -419,6 +458,8 @@
     <ClInclude Include="includes\imgui.1.69.gl\imstb_truetype.h" />
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
+    <ClInclude Include="src\new_utils\header_only\simple_quaternion_camera.h" />
+    <ClInclude Include="src\new_utils\header_only\static_mesh.h" />
     <ClInclude Include="src\old_utils\CameraFPS.h" />
     <ClInclude Include="src\old_utils\nu_utils.h" />
     <ClInclude Include="src\old_utils\Shader.h" />
@@ -426,6 +467,13 @@
     <ClInclude Include="src\old_utils\Utilities.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="includes\assimp\color4.inl" />
+    <None Include="includes\assimp\material.inl" />
+    <None Include="includes\assimp\matrix3x3.inl" />
+    <None Include="includes\assimp\matrix4x4.inl" />
+    <None Include="includes\assimp\quaternion.inl" />
+    <None Include="includes\assimp\vector2.inl" />
+    <None Include="includes\assimp\vector3.inl" />
     <None Include="includes\glm\detail\func_common.inl" />
     <None Include="includes\glm\detail\func_common_simd.inl" />
     <None Include="includes\glm\detail\func_exponential.inl" />

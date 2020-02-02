@@ -12,12 +12,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "../../new_utils/header_only/static_mesh.h"
+#include "../../new_utils/header_only/simple_quaternion_camera.h"
 
 
 namespace
 {
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // opengl 4.3 style of error checking
 	static void APIENTRY openGLErrorCallback_4_3(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 	{
@@ -151,67 +152,8 @@ if(anyValueNAN(value))\
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Create the verts
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		float sphereOffset = 1.0f;  //the closer this is to the tri points, the more different the normals will be.
-		bool bConvex = true;
-		GLuint vao = 0;
-		GLuint vbo = 0;
-		auto regenerateVerts = [&]()
-		{
-			//create some ad-hoc normals that are generated as if this triangle is a tri on surface on a sphere
-			struct Vert
-			{
-				glm::vec3 pos;
-				glm::vec3 color;
-				glm::vec3 normal;
-			};
-			Vert verts[] = {
-				//						x    y      z				//rgb								normal: nx,ny,nz
-					Vert{	glm::vec3{1.0f, -0.0f, 0.0f},			glm::vec3{1.f,0.f,0.f},		glm::vec3{0.f, 0.f, 1.f}},
-					Vert{	glm::vec3{-0.5f, 0.866f, 0.0f},			glm::vec3{0.f,1.f,0.f},		glm::vec3{0.f, 0.f, 1.f}},
-					Vert{	glm::vec3{-0.5f, -0.866f, 0.0f},		glm::vec3{0.f,0.f,1.f},		glm::vec3{0.f, 0.f, 1.f}}
-			};
-			if (bConvex)
-			{
-				//treat vertices as if they are points on a sphere and generate normal from an imaginary sphere center
-				glm::vec3 simSphereCenter{ 0.f, 0.f, -sphereOffset};
-				verts[0].normal = glm::normalize(verts[0].pos - simSphereCenter);
-				verts[1].normal = glm::normalize(verts[1].pos - simSphereCenter);
-				verts[2].normal = glm::normalize(verts[2].pos - simSphereCenter);
-			}
-			else
-			{
-				//generate normals towards an imaginary point at the center of the triangle
-				glm::vec3 a = verts[0].pos, b = verts[1].pos, c = verts[2].pos;
-
-				glm::vec3 offsetCenter = 0.333f * a + 0.333f * b + 0.333f * c;
-				glm::vec3 flatNormal = glm::normalize(glm::cross(b - a, c - a));
-				offsetCenter += flatNormal * sphereOffset; //use same parameter to control concaveness of the demo
-
-				verts[0].normal = glm::normalize(offsetCenter - verts[0].pos);
-				verts[1].normal = glm::normalize(offsetCenter - verts[1].pos);
-				verts[2].normal = glm::normalize(offsetCenter - verts[2].pos);
-			}
-
-			if (vao) { glDeleteVertexArrays(1, &vao); }
-			glGenVertexArrays(1, &vao);
-			glBindVertexArray(vao);
-
-			if (vbo) { glDeleteBuffers(1, &vbo); }
-			glGenBuffers(1, &vbo);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //TODO remove
-			glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), reinterpret_cast<void*>(0));
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), reinterpret_cast<void*>(6 * sizeof(float)));
-			glEnableVertexAttribArray(2);
-		};
-		regenerateVerts();
-
+		StaticMesh::Model satalliteModel("./assets/models/satellite/GroundSatellite.obj");
+		
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// tessellation parameters
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -250,29 +192,31 @@ if(anyValueNAN(value))\
 					#version 410 core
 
 					layout (location = 0) in vec3 position;				
-					layout (location = 1) in vec3 vertColor;				
-					layout (location = 2) in vec3 normal;
+					layout (location = 1) in vec3 normal;
+					layout (location = 2) in vec2 uv;
+					//layout (location = 3) in vec3 tangent;
+					//layout (location = 4) in vec3 bitangent;
 
-					out vec3 color_tcs_in;
 					out vec3 pos_tcs_in;
 					out vec3 normal_tcs_in;
+					out vec2 uv_tcs_in;
+					//out vec3 tangent_tcs_in;
+					//out vec3 bitangent_tcs_in;
 
 					void main(){
 						//note, when doing tessellation, you should wait to apply clip space projection until after tessellation
 						//NOTICE: we do not write to gl_Position 
-						color_tcs_in = vertColor;
-						pos_tcs_in = position;					//do not perspective divide this yet, wait until after TES
+
+						pos_tcs_in = position;					//do not perspective divide this yet, wait until TES
 						normal_tcs_in = normalize(normal);		//if you do any transformations of normal here, it is a good idea to renormalize. interpolation will happen TES and geometry shader
+						vec2 uv_tcs_in = uv;
+
+						//enable this code for normal mapping
+						//tangent_tcs_in = tangent;				//my model system normalizes these upon when loading
+						//bitangent_tcs_in = bitangent;			//my model system normalizes these upon when loading
 					}
 				)";
-
-			vertexShader = glCreateShader(GL_VERTEX_SHADER);
-			glShaderSource(vertexShader, 1, &vertex_shader_src, nullptr);
-			glCompileShader(vertexShader);
-			verifyShaderCompiled("vertex shader", vertexShader);
-
-
-			//--------provided input------------
+			//-------- TCS provided input------------
 			//in int gl_PatchVerticesIn;	//num verts in input patch
 			//in int gl_PrimitiveID;		//index of current patch within rendering command
 			//in int gl_InvocationID		//index of TCS invocation (eg which vert it is operating on)
@@ -291,15 +235,15 @@ if(anyValueNAN(value))\
 					layout (vertices = 1) out;	//define OUTPUT patch_size (ie the control points), must be less than patch size limit. TCS executes the number of times matching output patch size(ie n output patch = n invocations.
 				
 					in vec3 pos_tcs_in[];
-					in vec3 color_tcs_in[];
 					in vec3 normal_tcs_in[];
+					in vec2 uv_tcs_in[];
 
-						//notation: (300) and (120) defines the cp's derivation verts. original verts are in the notation positions (ABC). 
-						//(300) means it took 3As, 0Bs, 0Cs. Thus the original edge verts are (300), (030),(003).
-						//(210) means a control point comes from 2As, 1B, and 0Cs. All control points in the PN scheme. When using edges to calc mid points
-						//(210) will be closer to a, which means it is a + (1/3) of the edge between a-to-b (not 2/3, as that is further away)
-						// sum up to 3. w_pos == world position.
-						//this is mostly the control points, plus a bit extra.
+					//notation: (300) and (120) defines the cp's derivation verts. original verts are in the notation positions (ABC). 
+					//(300) means it took 3As, 0Bs, 0Cs. Thus the original edge verts are (300), (030),(003).
+					//(210) means a control point comes from 2As, 1B, and 0Cs. All control points in the PN scheme. When using edges to calc mid points
+					//(210) will be closer to a, which means it is a + (1/3) of the edge between a-to-b (not 2/3, as that is further away)
+					// sum up to 3. w_pos == world position.
+					//this is mostly the control points, plus a bit extra.
 					struct ControlPoints_OutputPatch
 					{
 						vec3 w_pos_300;
@@ -317,7 +261,7 @@ if(anyValueNAN(value))\
 						vec3 w_pos_111;	//the center point
 
 						vec3 normal[3];
-						vec3 color[3];
+						vec2 uv[3];
 					};
 					out patch ControlPoints_OutputPatch outPatch; //notice the patch keyword
 
@@ -346,8 +290,8 @@ if(anyValueNAN(value))\
 					{
 						for(int cp = 0; cp < 3; ++cp)
 						{
-							outPatch.color[cp] = color_tcs_in[cp];
 							outPatch.normal[cp] = normal_tcs_in[cp];
+							outPatch.uv[cp] = uv_tcs_in[cp];
 						}
 
 						//set the corner positions
@@ -382,7 +326,7 @@ if(anyValueNAN(value))\
 						outPatch.w_pos_102 = projectPntToNormalPlane(outPatch.w_pos_102, outPatch.normal[2], outPatch.w_pos_003);
 						outPatch.w_pos_012 = projectPntToNormalPlane(outPatch.w_pos_012, outPatch.normal[2], outPatch.w_pos_003);
 
-						//calculate center point. this will be some distnace up from the flat center of tri. dist: We create plane of mid points, then from center of that plane go up 1/2 distance of the vector from flat_tri_center to mid_plane_center.
+						//calculate center point. this will be some distance up from the flat center of tri. dist: We create plane of mid points, then from center of that plane go up 1/2 distance of the vector from flat_tri_center to mid_plane_center.
 						vec3 triCenter = (outPatch.w_pos_300 + outPatch.w_pos_030 + outPatch.w_pos_003) / 3.0f; //barycentric coordiantes to get center
 						outPatch.w_pos_111 = (outPatch.w_pos_210 + outPatch.w_pos_201
 											+ outPatch.w_pos_021 + outPatch.w_pos_120
@@ -397,28 +341,24 @@ if(anyValueNAN(value))\
 						gl_TessLevelInner[0] = innerTessLevel[0];
 					}
 				)";
-			tessControlShader = glCreateShader(GL_TESS_CONTROL_SHADER);
-			glShaderSource(tessControlShader, 1, &tessellation_control_shader_src, nullptr);
-			glCompileShader(tessControlShader);
-			verifyShaderCompiled("tess control shader", tessControlShader);
 
-			////////////////////////////////////////////////////////
-			//primitive generator (PG) is fixed function stage
-			////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////
+				//primitive generator (PG) is fixed function stage
+				////////////////////////////////////////////////////////
 
-			//----------built in inputs------------
-			//in vec3 gl_TessCoord;			//location within abstract patch
-			//in int gl_PatchVerticesIn;	//vertex count for patch being processed
-			//in int gl_PrimitiveID;		//index of current patch in series of patches being processed for this draw call
-			//patch in float gl_TessLevelOuter[4];
-			//patch in float gl_TessLevelInner[2];
-			//in gl_PerVertex
-			//{
-			//  vec4 gl_Position;
-			//  float gl_PointSize;
-			//  float gl_ClipDistance[];
-			//} gl_in[gl_MaxPatchVertices]; //only access within gl_PatchVerticesIn
-			std::string tess_evaluation_shader_src = R"(
+				//---------- TES built in inputs------------
+				//in vec3 gl_TessCoord;			//location within abstract patch
+				//in int gl_PatchVerticesIn;	//vertex count for patch being processed
+				//in int gl_PrimitiveID;		//index of current patch in series of patches being processed for this draw call
+				//patch in float gl_TessLevelOuter[4];
+				//patch in float gl_TessLevelInner[2];
+				//in gl_PerVertex
+				//{
+				//  vec4 gl_Position;
+				//  float gl_PointSize;
+				//  float gl_ClipDistance[];
+				//} gl_in[gl_MaxPatchVertices]; //only access within gl_PatchVerticesIn
+				std::string tess_evaluation_shader_src = R"(
 					#version 410 core
 				
 					layout(triangles) in;
@@ -443,19 +383,22 @@ if(anyValueNAN(value))\
 						vec3 w_pos_111;	//the center point
 
 						vec3 normal[3];
-						vec3 color[3];
-						//vec3 position[3];
+						vec2 uv[3];
 					};
 					in patch ControlPoints_OutputPatch outPatch;
 
 					out vec3 pos_fs_in;
-					out vec3 color_fs_in;
 					out vec3 normal_fs_in;
+					out vec2 uv_fs_in;
 
 					uniform mat4 view = mat4(1.f);
 					uniform mat4 projection = mat4(1.f);
 
 					vec3 barycentric_interpolate_3d(vec3 a, vec3 b, vec3 c)
+					{
+						return (a*gl_TessCoord.x + b*gl_TessCoord.y + c*gl_TessCoord.z);
+					}
+					vec2 barycentric_interpolate_2d(vec2 a, vec2 b, vec2 c)
 					{
 						return (a*gl_TessCoord.x + b*gl_TessCoord.y + c*gl_TessCoord.z);
 					}
@@ -479,9 +422,7 @@ if(anyValueNAN(value))\
 						float v3 = v * v2;
 
 						//bezier 					
-
-						color_fs_in = barycentric_interpolate_3d(outPatch.color[0], outPatch.color[1], outPatch.color[2]);
-					
+						uv_fs_in = barycentric_interpolate_2d(outPatch.uv[0], outPatch.uv[1], outPatch.uv[2]);
 						vec3 bezierPos = 
 							(outPatch.w_pos_300 * w3) + (outPatch.w_pos_030 * u3) + (outPatch.w_pos_003 * v3)
 							 + outPatch.w_pos_210*3*w2*u  + outPatch.w_pos_201*3*w2*v
@@ -493,6 +434,32 @@ if(anyValueNAN(value))\
 						gl_Position = projection * view * vec4(bezierPos, 1.0f);
 					}
 				)";
+
+				const char* frag_shader_src = R"(
+					#version 410 core
+					out vec4 fragmentColor;
+				
+					in vec3 pos_fs_in;
+					in vec3 normal_fs_in;
+					in vec2 uv_fs_in;
+
+					void main(){
+						fragmentColor = vec4(1.f, 0.f, 0.f, 1.0f);
+					}
+				)";
+
+			vertexShader = glCreateShader(GL_VERTEX_SHADER);
+			glShaderSource(vertexShader, 1, &vertex_shader_src, nullptr);
+			glCompileShader(vertexShader);
+			verifyShaderCompiled("vertex shader", vertexShader);
+
+
+			tessControlShader = glCreateShader(GL_TESS_CONTROL_SHADER);
+			glShaderSource(tessControlShader, 1, &tessellation_control_shader_src, nullptr);
+			glCompileShader(tessControlShader);
+			verifyShaderCompiled("tess control shader", tessControlShader);
+
+
 
 			const std::string equal_spacing_str = "layout(equal_spacing) in;";
 			const std::string fractional_even_spacing_str = "layout(fractional_even_spacing) in;";
@@ -529,18 +496,6 @@ if(anyValueNAN(value))\
 			glCompileShader(tessEvaluationShader);
 			verifyShaderCompiled("tess evaluation shader", tessEvaluationShader);
 
-			const char* frag_shader_src = R"(
-					#version 410 core
-					out vec4 fragmentColor;
-				
-					in vec3 color_fs_in;
-					in vec3 pos_fs_in;
-					in vec3 normal_fs_in;
-
-					void main(){
-						fragmentColor = vec4(color_fs_in, 1.0f);
-					}
-				)";
 			fragShader = glCreateShader(GL_FRAGMENT_SHADER);
 			glShaderSource(fragShader, 1, &frag_shader_src, nullptr);
 			glCompileShader(fragShader);
@@ -945,7 +900,7 @@ if(anyValueNAN(value))\
 		float normalPlaneSize = 0.25f;
 		float normalDisplayLength = 0.5f;
 		const GLint planeSize_ul = glGetUniformLocation(normalPlaneDisplayShader, "planeSize");
-		
+
 
 		//uniforms
 		bool bUseSingleOuterTL = 1;
@@ -973,63 +928,18 @@ if(anyValueNAN(value))\
 		////////////////////////////////////////////////////////
 		// normal shader display
 		////////////////////////////////////////////////////////
-		const GLint gs_plane_view_ul =		 glGetUniformLocation(normalPlaneDisplayShader, "view");
+		const GLint gs_plane_view_ul = glGetUniformLocation(normalPlaneDisplayShader, "view");
 		const GLint gs_plane_projection_ul = glGetUniformLocation(normalPlaneDisplayShader, "projection");
 
 		////////////////////////////////////////////////////////
 		// control point display shader
 		////////////////////////////////////////////////////////
-		const GLint gs_cp_view_ul =		  glGetUniformLocation(controlPointShader, "view");
+		const GLint gs_cp_view_ul = glGetUniformLocation(controlPointShader, "view");
 		const GLint gs_cp_projection_ul = glGetUniformLocation(controlPointShader, "projection");
 		const GLint gs_cp_centerControlPointOffsetDivisor_ul = glGetUniformLocation(controlPointShader, "centerControlPointOffsetDivisor");
 
-		struct QuatOrbitCam
-		{
-			glm::quat rotation{ 1.f,0,0,0 };
-			glm::vec3 u_axis{ 1.f,0.f,0.f };
-			glm::vec3 v_axis{ 0.f,1.f,0.f };
-			glm::vec3 w_axis{ 0.f,0.f,1.f };
-			float offsetDistance = 2.5f;
-			glm::vec3 pos{ 0.f, 0.f, offsetDistance };
-			float mouseSensitivity = 0.0125f;
-
-			void mouseMoved(const glm::vec2& deltaMouse)
-			{
-				glm::vec3 uvPlaneVec = u_axis * deltaMouse.x;
-				uvPlaneVec += v_axis * deltaMouse.y;
-
-				float rotationMagnitude = glm::length(uvPlaneVec);
-				if (rotationMagnitude == 0.0f) { return; }
-				uvPlaneVec = glm::normalize(uvPlaneVec);
-
-				glm::vec3 rotationAxis = glm::normalize(glm::cross(uvPlaneVec, -w_axis));
-				glm::quat deltaQuat = glm::angleAxis(mouseSensitivity * rotationMagnitude, rotationAxis);
-				NAN_BREAK(deltaQuat);
-
-				rotation = deltaQuat * rotation;
-
-				glm::mat4 transform = glm::toMat4(rotation);
-				u_axis = glm::normalize(glm::vec3(transform * glm::vec4{ 1,0, 0,0 })); //#optimize the normalization of the basis may be superfluous, but needs testing due to floating point error
-				v_axis = glm::normalize(glm::vec3(transform * glm::vec4{ 0,1, 0,0 }));
-				w_axis = glm::normalize(glm::vec3(transform * glm::vec4{ 0,0,-1,0 }));
-				NAN_BREAK(u_axis);
-				NAN_BREAK(v_axis);
-				NAN_BREAK(w_axis);
-					
-				update();
-			}
-			void update()
-			{
-				//fix on point (0,0,0)
-				glm::vec3 front_offset = w_axis * offsetDistance;
-				pos = /*vec3(0,0,0) + */ front_offset;
-			}
-			glm::mat4 getView()
-			{
-				return glm::lookAt(pos, glm::vec3(0.f), v_axis);
-			}
-		};
-		QuatOrbitCam camera = {};
+		QuaternionCamera camera;
+		camera.pos = glm::vec3{ 0,0, -2.f };
 
 		bool bRegenerateVerts = false;
 		bool bRebuildShaders = false;
@@ -1039,44 +949,21 @@ if(anyValueNAN(value))\
 
 		while (!glfwWindowShouldClose(window))
 		{
+			static float lastFrameTime = -1.f; //simulate some time on the first frame where time is 0.
+			float thisFrameTime = float(glfwGetTime());
+			float dt_sec = thisFrameTime - lastFrameTime;
+			lastFrameTime = thisFrameTime;
+
+			camera.tick(dt_sec, window);
+
 			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			{
 				glfwSetWindowShouldClose(window, true);
-			}
-			if (bRegenerateVerts)
-			{
-				bRegenerateVerts = false;
-				regenerateVerts();	//don't make opengl calls while ImGUI is rendering
 			}
 			if (bRebuildShaders)
 			{
 				bRebuildShaders = false;
 				buildTessellationShaders(); //do not rebuild shaders during GUI rendering.
-			}
-			static bool bMiddleBtnPressed = false;
-			if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE))
-			{
-				static double lastX = 0;
-				static double lastY = 0;
-				double x, y;
-				//just polling to keep this demo more readable from top to bottom, rather than having to jump between callback functions
-				glfwGetCursorPos(window, &x, &y);
-				x += double(windowWidth) / 0.5;
-				y += double(windowHeight) / 0.5;
-
-				if (!bMiddleBtnPressed) //reset the lastx/y between middle button clicks
-				{
-					lastX = x; lastY = y;
-					bMiddleBtnPressed = true;
-				}
-				glm::vec2 deltaMouse{ float(x - lastX), float(y - lastY) };
-				lastX = x;
-				lastY = y;
-				camera.mouseMoved(deltaMouse);
-			}
-			else
-			{
-				bMiddleBtnPressed = false;
 			}
 
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1085,8 +972,10 @@ if(anyValueNAN(value))\
 			glPolygonMode(GL_FRONT_AND_BACK, bPolygonMode ? GL_FILL : GL_LINE);
 
 			glUseProgram(shaderProg);
-			glBindVertexArray(vao);
 
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// Render model
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			glm::mat4 view = camera.getView();
 			glm::mat4 projection = glm::perspective(glm::radians(45.0f), float(windowWidth) / windowHeight, 0.1f, 100.f);
 			glUniform1i(bUseSingleGlobalTL_ul, int(bUseSingleGlobalTL)); //controls whether or not to allow independent outer levels
@@ -1096,17 +985,13 @@ if(anyValueNAN(value))\
 			glUniform1f(centerControlPointOffsetDivisor_ul, centerControlPointOffsetDivisor);
 			glUniformMatrix4fv(view_ul, 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
+			satalliteModel.draw(shaderProg, GL_PATCHES);
 
-
-			glPatchParameteri(GL_PATCH_VERTICES, 3); //doesn't need to be done every frame, doing here for demo clarity
-			glDrawArrays(GL_PATCHES, 0, 3);
-
-			{ 
+			{
 				////////////////////////////////////////////////////////
 				// Use geometry shader debug visuals
 				////////////////////////////////////////////////////////
 				glUseProgram(normalDisplayShader);
-				glBindVertexArray(vao);
 				glUniformMatrix4fv(gs_view_ul, 1, GL_FALSE, glm::value_ptr(view));
 				glUniformMatrix4fv(gs_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
 				glUniform1f(gs_normalDisplayLength_ul, normalDisplayLength);
@@ -1118,22 +1003,21 @@ if(anyValueNAN(value))\
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				glUseProgram(normalPlaneDisplayShader);
 				glUniform1f(planeSize_ul, normalPlaneSize);
-				glBindVertexArray(vao);
 				glUniformMatrix4fv(gs_plane_view_ul, 1, GL_FALSE, glm::value_ptr(view));
 				glUniformMatrix4fv(gs_plane_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
-				if (bShowNormalPlanes) {glDrawArrays(GL_TRIANGLES, 0, 3);}
+				if (bShowNormalPlanes) { glDrawArrays(GL_TRIANGLES, 0, 3); }
 
 				////////////////////////////////////////////////////////
 				// Render control points
 				////////////////////////////////////////////////////////
 				glUseProgram(controlPointShader);
-				glBindVertexArray(vao);
 				glUniformMatrix4fv(gs_cp_view_ul, 1, GL_FALSE, glm::value_ptr(view));
 				glUniformMatrix4fv(gs_cp_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
 				glUniform1f(gs_cp_centerControlPointOffsetDivisor_ul, centerControlPointOffsetDivisor);
 				glPointSize(controlPointSize);
 				if (bShowControlPoints) { glDrawArrays(GL_TRIANGLES, 0, 3); }
 				glPointSize(1.0f);
+
 			}
 
 			{ //interactive UI
@@ -1145,12 +1029,7 @@ if(anyValueNAN(value))\
 					ImGuiWindowFlags flags = 0;
 					ImGui::Begin("OpenGL Tweaker (imgui library)", nullptr, flags);
 					{
-						if (ImGui::SliderFloat("camera distance", &camera.offsetDistance, 0.25f, 5.f)) { camera.update(); }
-						if (ImGui::Checkbox("convex", &bConvex)) { bRegenerateVerts = true; }
-						ImGui::SameLine();
-						if (ImGui::SliderFloat("normal adjustment", &sphereOffset, 0.001f, 5.0f)) { bRegenerateVerts = true; }
-
-						//below invalides the point normal algorithm
+						//below invalidates the point normal algorithm
 						ImGui::SliderFloat("center CP offset divisor", &centerControlPointOffsetDivisor, 0.05f, 2.f);
 
 						ImGui::Checkbox("vert normals", &bShowVertNormals);
@@ -1215,8 +1094,6 @@ if(anyValueNAN(value))\
 							ImGui::SameLine();
 							if (ImGui::RadioButton("fractional_odd_spacing", &spacing, int(SpacingType::FRACTIONAL_ODD_SPACING))) { bRebuildShaders = true; }
 						}
-
-
 					}
 					ImGui::End();
 				}
@@ -1230,8 +1107,6 @@ if(anyValueNAN(value))\
 		}
 
 		glfwTerminate();
-		glDeleteVertexArrays(1, &vao);
-		glDeleteBuffers(1, &vbo);
 
 		glDeleteProgram(shaderProg);
 		glDeleteProgram(normalDisplayShader);
@@ -1245,7 +1120,7 @@ if(anyValueNAN(value))\
 //	http://ogldev.atspace.co.uk/www/tutorial31/tutorial31.html
 
 
-//int main()
-//{
-//	true_main();
-//}
+int main()
+{
+	true_main();
+}
