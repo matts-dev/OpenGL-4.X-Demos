@@ -157,7 +157,10 @@ if(anyValueNAN(value))\
 		StaticMesh::Model manModel("./assets/models/animtutorial/boblampclean.md5mesh", aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
 		StaticMesh::Model* targetModel = &satelliteModel;
 		int selectedMeshIdx = 0;
+		int tessellationMethod = 0;
 		glm::mat4 meshModel_m{ 1.f };
+
+		bool bShowControlPoints = 0;
 		auto refreshMesh = [&]()
 		{
 			switch (selectedMeshIdx)
@@ -172,7 +175,7 @@ if(anyValueNAN(value))\
 				{
 					targetModel = &manModel; 
 					meshModel_m = glm::toMat4(angleAxis(glm::radians<float>(-90), glm::vec3(1, 0, 0)));
-					meshModel_m = glm::scale(meshModel_m, glm::vec3(0.05f));
+					meshModel_m = !bShowControlPoints ? glm::scale(meshModel_m, glm::vec3(0.05f)) : meshModel_m; //#TODO did not adjust cp visualization shader for scaling
 					break;
 
 				}
@@ -180,11 +183,13 @@ if(anyValueNAN(value))\
 				default: 
 				{
 					targetModel = &satelliteModel; 
-					meshModel_m = glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+					meshModel_m = glm::toMat4(angleAxis(glm::radians<float>(45), glm::vec3(0, 1, 0)));
+					meshModel_m = !bShowControlPoints ? glm::scale(meshModel_m, glm::vec3(1.f)) : meshModel_m;
 					break;
 				}
 			}
 		};
+		refreshMesh();
 		
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// tessellation parameters
@@ -303,12 +308,128 @@ if(anyValueNAN(value))\
 					uniform bool bUseSingleOuterTL = true;
 					uniform float centerControlPointOffsetDivisor = 2.0f;
 
+					//0 = tessellation for all distances
+					//1 = tessellation based on distance to camera
+					//2 = tessellation based on screenspace occupancy
+					uniform int tessellationMethod = 0;
+					uniform vec3 camPos = vec3(0,0,0);
+					uniform mat4 model = mat4(1.f);
+					uniform mat4 view = mat4(1.f);
+					uniform mat4 projection = mat4(1.f);
 
-					float getTessLevel(uint outerIndex) 
+					//helper function that computes efficient length
+					float my_length2(vec3 a) { return dot(a,a); }
+
+					////////////////////////////////////////////////////////////////////
+					// Tessellation distance mapping function
+					////////////////////////////////////////////////////////////////////
+					float getTessellationForDistance(float averageCamDist2)
 					{
-						//TL's are roughly how many things to subdivide an edge into
-						if(bUseSingleGlobalTL) return innerTessLevel[0];
-						else return outerTessLevels[bUseSingleOuterTL ? 0 : outerIndex];
+							//map the average distance of this edge to a tessellation level
+							const float maxTessellation = 10.0f;
+							const float minTessellation = 0.1f;
+
+							const float tessStartDist2 = 10;	//represents the distance where we start tessellating
+							float a = clamp(averageCamDist2 / tessStartDist2, 0, 1); 
+
+							float TL = mix(maxTessellation, minTessellation, a); //choose a smaller tessellation at further distances
+							return TL;
+					}
+
+					////////////////////////////////////////////////////////////////////
+					// Tessellation NDC occupancy tess level
+					////////////////////////////////////////////////////////////////////					
+					float getTessLevelForNDC(float alpha)
+					{
+						//map the average distance of this edge to a tessellation level
+						const float maxTessellation = 64.0f;
+						const float minTessellation = 0.1f;
+
+						float TL = mix(minTessellation, maxTessellation, alpha); //choose a smaller tessellation at further distances
+						return TL;
+					}
+
+					////////////////////////////////////////////////////////////////////
+					// Get the triangle edge tessellation levels
+					////////////////////////////////////////////////////////////////////
+					float getOuterTessLevel(uint outerIndex, vec4 a_ws, vec4 b_ws, vec4 c_ws) 
+					{
+						if(tessellationMethod == 0)
+						{
+							//tessellation that is control by uniforms, rather than being related to camera
+							if(bUseSingleGlobalTL) return innerTessLevel[0];
+							else return outerTessLevels[bUseSingleOuterTL ? 0 : outerIndex];
+						}
+						else if (tessellationMethod == 1)
+						{
+							///////////////////////////////////////////
+							//tessellation based on distance to camera
+							//////////////////////////////////////////
+							float blen2 = my_length2(b_ws.xyz - camPos);
+							float clen2 = my_length2(c_ws.xyz - camPos);
+							float averageDist2 = (blen2 + clen2) / 2.0f;
+							return getTessellationForDistance(averageDist2);
+						}
+						else
+						{
+							//tessellation based on screen space occupancy
+							mat4 toClipSpace = projection * view;
+							vec4 b_cs = toClipSpace * b_ws;
+							vec4 c_cs = toClipSpace * c_ws;
+
+							b_cs = b_cs/b_cs.w;
+							c_cs = c_cs/c_cs.w;
+
+							vec3 edge_cs = vec3(vec2(b_cs - c_cs), 0.f);
+							float edgeNDCLen2 = my_length2(edge_cs); //this is NDC, not screen space
+
+							//NDC is a box of size w=2,h=2; (becaues it has range [-1,1]). The edge is distance c = sqrt(2^2 + 2^2) = 2.828
+							float ndcMaxDistance2 = pow(2.828,2);
+							float alpha = clamp(edgeNDCLen2 / ndcMaxDistance2, 0, 1);
+							return getTessLevelForNDC(alpha);
+						}
+					}
+					////////////////////////////////////////////////////////////////////
+					// get the internal tessellation level of the triangle
+					////////////////////////////////////////////////////////////////////
+					float getInnerTessLevel(vec4 a_ws, vec4 b_ws, vec4 c_ws)
+					{
+						if(tessellationMethod == 0)
+						{
+							//tessellation that is control by uniforms, rather than being related to camera
+							return innerTessLevel[0]; //triangles only use the first tessellation level
+						}
+						else if (tessellationMethod == 1)
+						{
+							///////////////////////////////////////////
+							//tessellation based on distance to camera
+							//////////////////////////////////////////
+							float alen2 = my_length2(a_ws.xyz - camPos);
+							float blen2 = my_length2(b_ws.xyz - camPos);
+							float clen2 = my_length2(c_ws.xyz - camPos);
+							float averageDist2 = (alen2 + blen2 + clen2) / 3.0f;
+							return getTessellationForDistance(averageDist2);
+						}
+						else
+						{
+							//tessellation based on screen space occupancy
+							mat4 toClipSpace = projection * view;
+							vec4 a_cs = toClipSpace * a_ws;
+							vec4 b_cs = toClipSpace * b_ws;
+							vec4 c_cs = toClipSpace * c_ws;
+
+							a_cs = a_cs/a_cs.w;
+							b_cs = b_cs/b_cs.w;
+							c_cs = c_cs/c_cs.w;
+
+							vec3 b_from_a_cs = vec3(vec2(b_cs - a_cs), 0);
+							vec3 c_from_a_cs = vec3(vec2(c_cs - a_cs), 0);
+							float triArea_ndc = length(cross(b_from_a_cs, c_from_a_cs)) / 2.0f; //cross gives area of trapezoid, divide that by 2 to get area of triangle
+		
+							//NDC is a box of size w=2,h=2; (becaues it has range [-1,1]). It has area 2 * 2 = 4.
+							float occupiedAreaFraction = clamp(triArea_ndc / (4), 0, 1); //range [0,1]
+							return getTessLevelForNDC(occupiedAreaFraction);
+						}
 					}
 
 					vec3 projectPntToNormalPlane(vec3 pnt, vec3 normal, vec3 normalPnt)
@@ -367,11 +488,15 @@ if(anyValueNAN(value))\
 						outPatch.w_pos_111 += (outPatch.w_pos_111 - triCenter) / centerControlPointOffsetDivisor; // 2.0f;	//seems ad-hoc to take half of the vector upward from tri.
 					
 						//tessellation levels
-						gl_TessLevelOuter[0] = getTessLevel(0);
-						gl_TessLevelOuter[1] = getTessLevel(1);
-						gl_TessLevelOuter[2] = getTessLevel(2);
+						vec4 a = model*vec4(pos_tcs_in[0], 1);
+						vec4 b = model*vec4(pos_tcs_in[1], 1);
+						vec4 c = model*vec4(pos_tcs_in[2], 1);
+
+						gl_TessLevelOuter[0] = getOuterTessLevel(0, a, b, c);
+						gl_TessLevelOuter[1] = getOuterTessLevel(1, b, c, a);
+						gl_TessLevelOuter[2] = getOuterTessLevel(2, c, a, b);
 					
-						gl_TessLevelInner[0] = innerTessLevel[0];
+						gl_TessLevelInner[0] = getInnerTessLevel(a, b, c);
 					}
 				)";
 
@@ -479,6 +604,7 @@ if(anyValueNAN(value))\
 					in vec2 uv_fs_in;
 
 					uniform vec3 dirLight = normalize(vec3(-1,-1,-1));
+					uniform bool bUseLight = true;
 
 					struct Material
 					{
@@ -491,10 +617,16 @@ if(anyValueNAN(value))\
 						vec4 diffuseTexture = texture(material.texture_diffuse0, uv_fs_in);
 
 						float diffuseFactor = max(dot(dirLight, normal_fs_in.xyz),0);
-						vec3 diffuse = diffuseTexture.xyz * diffuseFactor;
-						vec3 ambient = diffuseTexture.xyz * 0.05;
-
-						fragmentColor = vec4(ambient+diffuse, 1.0f);
+						if(bUseLight)
+						{
+							vec3 diffuse = diffuseTexture.xyz * diffuseFactor;
+							vec3 ambient = diffuseTexture.xyz * 0.05;
+							fragmentColor = vec4(ambient+diffuse, 1.0f);
+						}
+						else
+						{
+							fragmentColor = vec4(diffuseTexture.rgb, 1.0f);
+						}
 					}
 				)";
 
@@ -960,7 +1092,7 @@ if(anyValueNAN(value))\
 		bool bPolygonMode = 1;
 		bool bShowVertNormals = 1;
 		bool bShowNormalPlanes = 0;
-		bool bShowControlPoints = 0;
+		bool bUseLight = 1;
 		float normalPlaneSize = 0.025f;
 		float normalDisplayLength = 0.05f;
 		const GLint planeSize_ul = glGetUniformLocation(normalPlaneDisplayShader, "planeSize");
@@ -979,10 +1111,14 @@ if(anyValueNAN(value))\
 		const GLint bUseSingleGlobalTL_ul = glGetUniformLocation(shaderProg, "bUseSingleGlobalTL");
 		const GLint innerTessLevel_ul = glGetUniformLocation(shaderProg, "innerTessLevel");
 		const GLint outerTessLevels_ul = glGetUniformLocation(shaderProg, "outerTessLevels");
+		const GLint camPos_ul = glGetUniformLocation(shaderProg, "camPos");
+		const GLint tessellationMethod_ul = glGetUniformLocation(shaderProg, "tessellationMethod");
 		const GLint model_ul = glGetUniformLocation(shaderProg, "model");
 		const GLint view_ul = glGetUniformLocation(shaderProg, "view");
 		const GLint projection_ul = glGetUniformLocation(shaderProg, "projection");
 		const GLint centerControlPointOffsetDivisor_ul = glGetUniformLocation(shaderProg, "centerControlPointOffsetDivisor");
+		const GLint bUseLight_ul = glGetUniformLocation(shaderProg, "bUseLight");
+		
 
 		////////////////////////////////////////////////////////
 		// normal shader display
@@ -1050,12 +1186,15 @@ if(anyValueNAN(value))\
 			// Render model
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			glm::mat4 view = camera.getView();
-			glm::mat4 projection = glm::perspective(glm::radians(45.0f), float(windowWidth) / windowHeight, 0.1f, 100.f);
+			glm::mat4 projection = glm::perspective(glm::radians(45.0f), float(windowWidth) / windowHeight, 0.01f, 100.f);
 			glUniform1i(bUseSingleGlobalTL_ul, int(bUseSingleGlobalTL)); //controls whether or not to allow independent outer levels
 			glUniform1i(bUseSingleOuterTL_ul, int(bUseSingleOuterTL)); //controls whether or not to allow independent outer levels
+			glUniform1i(bUseLight_ul, int(bUseLight)); //controls whether or not to allow independent outer levels
 			glUniform1fv(innerTessLevel_ul, 2, &innerTessLevels[0]);
 			glUniform1fv(outerTessLevels_ul, 4, &outerTessLevels[0]);
 			glUniform1f(centerControlPointOffsetDivisor_ul, centerControlPointOffsetDivisor);
+			glUniform3f(camPos_ul, camera.pos.x, camera.pos.y, camera.pos.z);
+			glUniform1i(tessellationMethod_ul, tessellationMethod);
 			glUniformMatrix4fv(model_ul, 1, GL_FALSE, glm::value_ptr(meshModel_m));
 			glUniformMatrix4fv(view_ul, 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
@@ -1115,7 +1254,7 @@ if(anyValueNAN(value))\
 						ImGui::SameLine();
 						ImGui::Checkbox("normal planes", &bShowNormalPlanes);
 						ImGui::SameLine();
-						ImGui::Checkbox("control points", &bShowControlPoints);
+						if (ImGui::Checkbox("control points", &bShowControlPoints)) { refreshMesh(); }
 						if (bShowVertNormals)
 						{
 							ImGui::SliderFloat("normal display length", &normalDisplayLength, 0.001f, 1.0f);
@@ -1133,6 +1272,8 @@ if(anyValueNAN(value))\
 						ImGui::Checkbox("enable depth test", &bEnableDepth);
 						ImGui::SameLine();
 						ImGui::Checkbox("render polygons", &bPolygonMode);
+						ImGui::SameLine();
+						ImGui::Checkbox("lighting", &bUseLight);
 						if (ImGui::Checkbox("layout(point_mode) in;", &bEnablePointMode)) { bRebuildShaders = true; }
 
 						ImGui::Checkbox("Use single tess level everywhere", &bUseSingleGlobalTL);
@@ -1172,6 +1313,15 @@ if(anyValueNAN(value))\
 							if (ImGui::RadioButton("fractional_even_spacing", &spacing, int(SpacingType::FRACTIONAL_EVEN_SPACING))) { bRebuildShaders = true; }
 							ImGui::SameLine();
 							if (ImGui::RadioButton("fractional_odd_spacing", &spacing, int(SpacingType::FRACTIONAL_ODD_SPACING))) { bRebuildShaders = true; }
+						}
+						{
+							ImGui::Text("Tess Algorithm:");
+							ImGui::SameLine();
+							ImGui::RadioButton("uniform", &tessellationMethod, 0);
+							ImGui::SameLine();
+							ImGui::RadioButton("camera distance", &tessellationMethod, 1);
+							ImGui::SameLine();
+							ImGui::RadioButton("screen space", &tessellationMethod, 2);
 						}
 						ImGui::Separator();
 						{
