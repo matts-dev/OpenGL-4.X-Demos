@@ -133,7 +133,7 @@ namespace StaticMesh
 			for (unsigned int i = 0; i < textures.size(); ++i)
 			{
 				std::string uniformName = textures[i].type;
-				if (uniformName == "texture_diffuse")
+				if (uniformName == "texture_diffuse") //#todo use enum rather than string comparison
 				{
 					//naming convention for diffuse is `texture_diffuseN`
 					uniformName = std::string("material.") + uniformName + std::to_string(diffuseTextureNumber);
@@ -191,10 +191,10 @@ namespace StaticMesh
 		Model& operator=(const Model& copy) = delete;
 		Model& operator=(Model&& move) = delete;
 
-		Model(const std::string& executable_relative_file_path)
+		Model(const std::string& executable_relative_file_path, int extraFlags = 0)
 		{
 			Assimp::Importer importer;
-			const aiScene* scene = importer.ReadFile(executable_relative_file_path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+			const aiScene* scene = importer.ReadFile(executable_relative_file_path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | extraFlags);
 			if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 			{
 				std::cerr << "Assimp: error importing model: ERROR::" << importer.GetErrorString() << std::endl;
@@ -216,7 +216,7 @@ namespace StaticMesh
 				glDeleteTextures(1, &texture.id);
 			}
 		}
-		void draw(const GLuint& shaderProgram, GLenum draw_primitive)
+		void draw(const GLuint& shaderProgram, GLenum draw_primitive = GL_TRIANGLES)
 		{
 			for (unsigned int i = 0; i < meshes.size(); ++i)
 			{

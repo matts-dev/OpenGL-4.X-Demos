@@ -152,7 +152,39 @@ if(anyValueNAN(value))\
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Create the verts
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		StaticMesh::Model satalliteModel("./assets/models/satellite/GroundSatellite.obj");
+		StaticMesh::Model satelliteModel("./assets/models/satellite/GroundSatellite.obj");
+		StaticMesh::Model nanosuitModel("./assets/models/nanosuit/nanosuit.obj");
+		StaticMesh::Model manModel("./assets/models/animtutorial/boblampclean.md5mesh", aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
+		StaticMesh::Model* targetModel = &satelliteModel;
+		int selectedMeshIdx = 0;
+		glm::mat4 meshModel_m{ 1.f };
+		auto refreshMesh = [&]()
+		{
+			switch (selectedMeshIdx)
+			{
+				case 1: 
+				{
+					targetModel = &nanosuitModel; 
+					meshModel_m = glm::scale(glm::mat4(1.f), glm::vec3(0.15f));
+					break;
+				}
+				case 2:
+				{
+					targetModel = &manModel; 
+					meshModel_m = glm::toMat4(angleAxis(glm::radians<float>(-90), glm::vec3(1, 0, 0)));
+					meshModel_m = glm::scale(meshModel_m, glm::vec3(0.05f));
+					break;
+
+				}
+				case 0:
+				default: 
+				{
+					targetModel = &satelliteModel; 
+					meshModel_m = glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+					break;
+				}
+			}
+		};
 		
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// tessellation parameters
@@ -209,7 +241,7 @@ if(anyValueNAN(value))\
 
 						pos_tcs_in = position;					//do not perspective divide this yet, wait until TES
 						normal_tcs_in = normalize(normal);		//if you do any transformations of normal here, it is a good idea to renormalize. interpolation will happen TES and geometry shader
-						vec2 uv_tcs_in = uv;
+						uv_tcs_in = uv;
 
 						//enable this code for normal mapping
 						//tangent_tcs_in = tangent;				//my model system normalizes these upon when loading
@@ -270,6 +302,7 @@ if(anyValueNAN(value))\
 					uniform bool bUseSingleGlobalTL = false;
 					uniform bool bUseSingleOuterTL = true;
 					uniform float centerControlPointOffsetDivisor = 2.0f;
+
 
 					float getTessLevel(uint outerIndex) 
 					{
@@ -391,6 +424,7 @@ if(anyValueNAN(value))\
 					out vec3 normal_fs_in;
 					out vec2 uv_fs_in;
 
+					uniform mat4 model = mat4(1.f);
 					uniform mat4 view = mat4(1.f);
 					uniform mat4 projection = mat4(1.f);
 
@@ -423,6 +457,7 @@ if(anyValueNAN(value))\
 
 						//bezier 					
 						uv_fs_in = barycentric_interpolate_2d(outPatch.uv[0], outPatch.uv[1], outPatch.uv[2]);
+						normal_fs_in = barycentric_interpolate_3d(outPatch.normal[0],outPatch.normal[1],outPatch.normal[2]);
 						vec3 bezierPos = 
 							(outPatch.w_pos_300 * w3) + (outPatch.w_pos_030 * u3) + (outPatch.w_pos_003 * v3)
 							 + outPatch.w_pos_210*3*w2*u  + outPatch.w_pos_201*3*w2*v
@@ -431,7 +466,7 @@ if(anyValueNAN(value))\
 							 + outPatch.w_pos_111*6*w*u*v;								//note: this is 6, not 3
 
 						//here is where we should do any perspective transformation for setting w values for clipping
-						gl_Position = projection * view * vec4(bezierPos, 1.0f);
+						gl_Position = projection * view * model * vec4(bezierPos, 1.0f);
 					}
 				)";
 
@@ -443,8 +478,23 @@ if(anyValueNAN(value))\
 					in vec3 normal_fs_in;
 					in vec2 uv_fs_in;
 
-					void main(){
-						fragmentColor = vec4(1.f, 0.f, 0.f, 1.0f);
+					uniform vec3 dirLight = normalize(vec3(-1,-1,-1));
+
+					struct Material
+					{
+						sampler2D texture_diffuse0;
+					};
+					uniform Material material;					
+
+					void main()
+					{
+						vec4 diffuseTexture = texture(material.texture_diffuse0, uv_fs_in);
+
+						float diffuseFactor = max(dot(dirLight, normal_fs_in.xyz),0);
+						vec3 diffuse = diffuseTexture.xyz * diffuseFactor;
+						vec3 ambient = diffuseTexture.xyz * 0.05;
+
+						fragmentColor = vec4(ambient+diffuse, 1.0f);
 					}
 				)";
 
@@ -458,8 +508,6 @@ if(anyValueNAN(value))\
 			glShaderSource(tessControlShader, 1, &tessellation_control_shader_src, nullptr);
 			glCompileShader(tessControlShader);
 			verifyShaderCompiled("tess control shader", tessControlShader);
-
-
 
 			const std::string equal_spacing_str = "layout(equal_spacing) in;";
 			const std::string fractional_even_spacing_str = "layout(fractional_even_spacing) in;";
@@ -524,8 +572,7 @@ if(anyValueNAN(value))\
 					#version 410 core
 
 					layout (location = 0) in vec3 position;				
-					layout (location = 1) in vec3 vertColor;				
-					layout (location = 2) in vec3 normal;
+					layout (location = 1) in vec3 normal;
 
 					out InterfaceBlockVSOUT{
 						vec4 vertNormal;
@@ -534,7 +581,24 @@ if(anyValueNAN(value))\
 					} vs_out;
 				
 					void main(){
-						vs_out.vertColor = vertColor;
+
+						const vec3 yellow = vec3(1,1,0);
+						const vec3 pink = vec3(1, 0.4f, 0.7f);
+						const vec3 purple = vec3(0.5f, 0.5f, 0);
+						const vec3 red = vec3(1,0,0);
+						const vec3 blue = vec3(0,1,0);
+						const vec3 green = vec3(0,0,1);
+
+						vs_out.vertColor = vec3(0,0,0);
+						vs_out.vertColor += clamp(normal.r, 0, 1) * red;
+						vs_out.vertColor += abs(clamp(normal.r, -1, 0)) * purple;
+
+						vs_out.vertColor += clamp(normal.g, 0, 1) * green;
+						vs_out.vertColor += abs(clamp(normal.g, -1, 0)) * pink;
+
+						vs_out.vertColor += clamp(normal.b, 0, 1) * blue;
+						vs_out.vertColor += abs(clamp(normal.b, -1, 0)) * yellow;
+
 						vs_out.vertPos = vec4(position, 1.0f);					
 						vs_out.vertNormal = normalize(vec4(normal,0));
 
@@ -571,13 +635,13 @@ if(anyValueNAN(value))\
 					{
 						//normal base
 						gl_Position = projection * view * model * gl_in[i].gl_Position;	
-						fragNormal_ws = vec3( inverse(transpose(model)) * vertices[i].vertNormal ); //don't use this for offset, 
+						fragNormal_ws = normalize(vec3( inverse(transpose(model)) * vertices[i].vertNormal ));  
 						fragPosition_ws = vec3(model * vertices[i].vertPos);
 						fragColor = vec4(vertices[i].vertColor,1.f);
 						EmitVertex();
 
 						//normal tip
-						fragPosition_ws = vec3(model * (vertices[i].vertPos + (vertices[i].vertNormal * normalDisplayLength)));
+						fragPosition_ws = vec3(model * vertices[i].vertPos) + (fragNormal_ws * normalDisplayLength);
 						gl_Position = projection * view * vec4(fragPosition_ws, 1.0f);
 						EmitVertex();
 
@@ -893,12 +957,12 @@ if(anyValueNAN(value))\
 
 		//ui
 		bool bEnableDepth = 1;
-		bool bPolygonMode = 0;
-		bool bShowVertNormals = 0;
+		bool bPolygonMode = 1;
+		bool bShowVertNormals = 1;
 		bool bShowNormalPlanes = 0;
 		bool bShowControlPoints = 0;
-		float normalPlaneSize = 0.25f;
-		float normalDisplayLength = 0.5f;
+		float normalPlaneSize = 0.025f;
+		float normalDisplayLength = 0.05f;
 		const GLint planeSize_ul = glGetUniformLocation(normalPlaneDisplayShader, "planeSize");
 
 
@@ -907,13 +971,15 @@ if(anyValueNAN(value))\
 		bool bUseSingleGlobalTL = 1;
 		float centerControlPointOffsetDivisor = 2.0f;
 		float controlPointSize = 8.0f;
-		GLfloat innerTessLevels[] = { 3.0f, 3.0f };
-		GLfloat outerTessLevels[] = { 3.0f, 3.0f, 3.0f, 3.0f };
+		const float startTessellationLevel = 1.0f;
+		GLfloat innerTessLevels[] = { startTessellationLevel, startTessellationLevel };
+		GLfloat outerTessLevels[] = { startTessellationLevel, startTessellationLevel, startTessellationLevel, startTessellationLevel };
 
 		const GLint bUseSingleOuterTL_ul = glGetUniformLocation(shaderProg, "bUseSingleOuterTL");
 		const GLint bUseSingleGlobalTL_ul = glGetUniformLocation(shaderProg, "bUseSingleGlobalTL");
 		const GLint innerTessLevel_ul = glGetUniformLocation(shaderProg, "innerTessLevel");
 		const GLint outerTessLevels_ul = glGetUniformLocation(shaderProg, "outerTessLevels");
+		const GLint model_ul = glGetUniformLocation(shaderProg, "model");
 		const GLint view_ul = glGetUniformLocation(shaderProg, "view");
 		const GLint projection_ul = glGetUniformLocation(shaderProg, "projection");
 		const GLint centerControlPointOffsetDivisor_ul = glGetUniformLocation(shaderProg, "centerControlPointOffsetDivisor");
@@ -921,6 +987,7 @@ if(anyValueNAN(value))\
 		////////////////////////////////////////////////////////
 		// normal shader display
 		////////////////////////////////////////////////////////
+		const GLint gs_model_ul = glGetUniformLocation(normalDisplayShader, "model");
 		const GLint gs_view_ul = glGetUniformLocation(normalDisplayShader, "view");
 		const GLint gs_projection_ul = glGetUniformLocation(normalDisplayShader, "projection");
 		const GLint gs_normalDisplayLength_ul = glGetUniformLocation(normalDisplayShader, "normalDisplayLength");
@@ -928,18 +995,23 @@ if(anyValueNAN(value))\
 		////////////////////////////////////////////////////////
 		// normal shader display
 		////////////////////////////////////////////////////////
+		const GLint gs_plane_model_ul = glGetUniformLocation(normalPlaneDisplayShader, "model");
 		const GLint gs_plane_view_ul = glGetUniformLocation(normalPlaneDisplayShader, "view");
 		const GLint gs_plane_projection_ul = glGetUniformLocation(normalPlaneDisplayShader, "projection");
 
 		////////////////////////////////////////////////////////
 		// control point display shader
 		////////////////////////////////////////////////////////
+		const GLint gs_cp_model_ul = glGetUniformLocation(controlPointShader, "model");
 		const GLint gs_cp_view_ul = glGetUniformLocation(controlPointShader, "view");
 		const GLint gs_cp_projection_ul = glGetUniformLocation(controlPointShader, "projection");
 		const GLint gs_cp_centerControlPointOffsetDivisor_ul = glGetUniformLocation(controlPointShader, "centerControlPointOffsetDivisor");
 
 		QuaternionCamera camera;
-		camera.pos = glm::vec3{ 0,0, -2.f };
+		camera.pos = glm::vec3{ 0.5f, 1.f, 1.f };
+		camera.cameraSpeed = 2.5f;
+		camera.rotation = glm::angleAxis(glm::radians<float>(180.f), glm::vec3(0, 1, 0));
+		camera.updateBasisVectors();
 
 		bool bRegenerateVerts = false;
 		bool bRebuildShaders = false;
@@ -956,7 +1028,8 @@ if(anyValueNAN(value))\
 
 			camera.tick(dt_sec, window);
 
-			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+			bool bShift = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && bShift)
 			{
 				glfwSetWindowShouldClose(window, true);
 			}
@@ -983,19 +1056,21 @@ if(anyValueNAN(value))\
 			glUniform1fv(innerTessLevel_ul, 2, &innerTessLevels[0]);
 			glUniform1fv(outerTessLevels_ul, 4, &outerTessLevels[0]);
 			glUniform1f(centerControlPointOffsetDivisor_ul, centerControlPointOffsetDivisor);
+			glUniformMatrix4fv(model_ul, 1, GL_FALSE, glm::value_ptr(meshModel_m));
 			glUniformMatrix4fv(view_ul, 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
-			satalliteModel.draw(shaderProg, GL_PATCHES);
+			targetModel->draw(shaderProg, GL_PATCHES);
 
 			{
 				////////////////////////////////////////////////////////
 				// Use geometry shader debug visuals
 				////////////////////////////////////////////////////////
 				glUseProgram(normalDisplayShader);
+				glUniformMatrix4fv(gs_model_ul, 1, GL_FALSE, glm::value_ptr(meshModel_m));
 				glUniformMatrix4fv(gs_view_ul, 1, GL_FALSE, glm::value_ptr(view));
 				glUniformMatrix4fv(gs_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
 				glUniform1f(gs_normalDisplayLength_ul, normalDisplayLength);
-				if (bShowVertNormals) { glDrawArrays(GL_TRIANGLES, 0, 3); }
+				if (bShowVertNormals) { targetModel->draw(normalDisplayShader); }
 
 				////////////////////////////////////////////////////////
 				// render normal's planes at verts
@@ -1003,21 +1078,22 @@ if(anyValueNAN(value))\
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				glUseProgram(normalPlaneDisplayShader);
 				glUniform1f(planeSize_ul, normalPlaneSize);
+				glUniformMatrix4fv(gs_plane_model_ul, 1, GL_FALSE, glm::value_ptr(meshModel_m));
 				glUniformMatrix4fv(gs_plane_view_ul, 1, GL_FALSE, glm::value_ptr(view));
 				glUniformMatrix4fv(gs_plane_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
-				if (bShowNormalPlanes) { glDrawArrays(GL_TRIANGLES, 0, 3); }
+				if (bShowNormalPlanes) { targetModel->draw(normalPlaneDisplayShader); }
 
 				////////////////////////////////////////////////////////
 				// Render control points
 				////////////////////////////////////////////////////////
 				glUseProgram(controlPointShader);
+				glUniformMatrix4fv(gs_cp_model_ul, 1, GL_FALSE, glm::value_ptr(meshModel_m));
 				glUniformMatrix4fv(gs_cp_view_ul, 1, GL_FALSE, glm::value_ptr(view));
 				glUniformMatrix4fv(gs_cp_projection_ul, 1, GL_FALSE, glm::value_ptr(projection));
 				glUniform1f(gs_cp_centerControlPointOffsetDivisor_ul, centerControlPointOffsetDivisor);
 				glPointSize(controlPointSize);
-				if (bShowControlPoints) { glDrawArrays(GL_TRIANGLES, 0, 3); }
-				glPointSize(1.0f);
-
+				if (bShowControlPoints) { targetModel->draw(controlPointShader); }
+				glPointSize(1.0f);	
 			}
 
 			{ //interactive UI
@@ -1029,8 +1105,11 @@ if(anyValueNAN(value))\
 					ImGuiWindowFlags flags = 0;
 					ImGui::Begin("OpenGL Tweaker (imgui library)", nullptr, flags);
 					{
+						static bool bExtendCenterCPDivisorRange = false;
+						//ImGui::Checkbox("+10", &bExtendCenterCPDivisorRange); ImGui::SameLine();
+
 						//below invalidates the point normal algorithm
-						ImGui::SliderFloat("center CP offset divisor", &centerControlPointOffsetDivisor, 0.05f, 2.f);
+						ImGui::SliderFloat("center CP offset divisor", &centerControlPointOffsetDivisor, 0.05f, bExtendCenterCPDivisorRange ? 12.f : 2.f);
 
 						ImGui::Checkbox("vert normals", &bShowVertNormals);
 						ImGui::SameLine();
@@ -1093,6 +1172,14 @@ if(anyValueNAN(value))\
 							if (ImGui::RadioButton("fractional_even_spacing", &spacing, int(SpacingType::FRACTIONAL_EVEN_SPACING))) { bRebuildShaders = true; }
 							ImGui::SameLine();
 							if (ImGui::RadioButton("fractional_odd_spacing", &spacing, int(SpacingType::FRACTIONAL_ODD_SPACING))) { bRebuildShaders = true; }
+						}
+						ImGui::Separator();
+						{
+							if (ImGui::RadioButton("satellite", &selectedMeshIdx, 0)) { refreshMesh(); }
+							ImGui::SameLine();
+							if (ImGui::RadioButton("nanosuit", &selectedMeshIdx, 1)) { refreshMesh(); }
+							ImGui::SameLine();
+							if (ImGui::RadioButton("man", &selectedMeshIdx, 2)) { refreshMesh(); }
 						}
 					}
 					ImGui::End();

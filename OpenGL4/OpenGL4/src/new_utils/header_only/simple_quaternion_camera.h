@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <assert.h>
+#include "assimp/Compiler/pstdint.h"
 
 class QuaternionCamera final
 {
@@ -50,7 +51,7 @@ public:
 		// Cursor mode
 		////////////////////////////////////////////////////////
 		static bool bJustPressedCursorMode = false;
-		if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
+		if (glfwGetKey(window, cursorModeKey) == GLFW_PRESS)
 		{
 			if (!bJustPressedCursorMode)
 			{
@@ -90,7 +91,7 @@ public:
 		if (glm::length2(inputVector) != 0.f)
 		{
 			inputVector = glm::normalize(inputVector);
-			pos += inputVector * cameraSpeed * dt_sec * (bSHIFT?10.f:1.f) * (bCTRL?0.1f:1.f);
+			pos += inputVector * cameraSpeed * dt_sec * (bCTRL?10.f:1.f) * (bSHIFT?0.1f:1.f);
 		}
 
 		////////////////////////////////////////////////////////
@@ -153,10 +154,11 @@ public: //public so demostrations can easily tweak; tick will correct
 	float cameraSpeed = 10.0f; //NDCs per second
 	float rollSpeed = glm::radians<float>(180.f);
 	glm::vec3 pos{ 0.f, 0.f, 0.f };
+	glm::quat rotation{ 1.f,0,0,0 };
+	uint32_t cursorModeKey = GLFW_KEY_ESCAPE;
 private: //tick state
 	double lastX = 0, lastY = 0;
 private:
-	glm::quat rotation{ 1.f,0,0,0 };
 	glm::vec3 u_axis{ 1.f,0.f,0.f };
 	glm::vec3 v_axis{ 0.f,1.f,0.f };
 	glm::vec3 w_axis{ 0.f,0.f,1.f };
