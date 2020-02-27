@@ -12,6 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
+
 #include "../../new_utils/header_only/static_mesh.h"
 #include "../../new_utils/header_only/simple_quaternion_camera.h"
 
@@ -1146,7 +1147,7 @@ if(anyValueNAN(value))\
 		QuaternionCamera camera;
 		camera.pos = glm::vec3{ 0.5f, 1.f, 1.f };
 		camera.cameraSpeed = 2.5f;
-		camera.rotation = glm::angleAxis(glm::radians<float>(180.f), glm::vec3(0, 1, 0));
+		//camera.rotation = glm::angleAxis(glm::radians<float>(180.f), glm::vec3(0, 1, 0));
 		camera.updateBasisVectors();
 
 		bool bRegenerateVerts = false;
@@ -1357,7 +1358,7 @@ if(anyValueNAN(value))\
 //	http://ogldev.atspace.co.uk/www/tutorial31/tutorial31.html
 
 
-int main()
-{
-	true_main();
-}
+//int main()
+//{
+//	true_main();
+//}

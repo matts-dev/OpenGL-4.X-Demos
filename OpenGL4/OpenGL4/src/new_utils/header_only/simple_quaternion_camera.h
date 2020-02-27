@@ -82,11 +82,11 @@ public:
 		}
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
 		{
-			inputVector += -u_axis;
+			inputVector += u_axis;
 		}
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 		{
-			inputVector += u_axis;
+			inputVector += -u_axis;
 		}
 		if (glm::length2(inputVector) != 0.f)
 		{
@@ -100,15 +100,15 @@ public:
 		float rollDirection = 0.f;
 		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 		{
-			rollDirection += 1.0f;
+			rollDirection += -1.0f;
 		}
 		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		{
-			rollDirection += -1.0f;
+			rollDirection += 1.0f;
 		}
 		if (rollDirection != 0.f)
 		{
-			glm::quat roll = glm::angleAxis(rollDirection * rollSpeed * dt_sec, w_axis);
+			glm::quat roll = glm::angleAxis(rollDirection * rollSpeed * dt_sec * (bSHIFT?0.25f:1.f), -w_axis);
 			rotation = roll * rotation;
 			updateBasisVectors();
 		}
@@ -119,13 +119,13 @@ public:
 		if (!bCursorMode)
 		{
 			glm::vec3 uvPlaneVec = u_axis * deltaMouse.x;
-			uvPlaneVec += v_axis * deltaMouse.y;
+			uvPlaneVec += v_axis * -deltaMouse.y;
 
 			float rotationMagnitude = glm::length(uvPlaneVec);
 			if (rotationMagnitude == 0.0f) { return; }
 			uvPlaneVec = glm::normalize(uvPlaneVec);
 
-			glm::vec3 rotationAxis = glm::normalize(glm::cross(uvPlaneVec, -w_axis));
+			glm::vec3 rotationAxis = glm::normalize(glm::cross(uvPlaneVec, w_axis));
 			glm::quat deltaQuat = glm::angleAxis(dt_sec * mouseSensitivity * rotationMagnitude, rotationAxis);
 			assert(!anyValueNAN(deltaQuat));
 
@@ -139,7 +139,7 @@ public:
 	{
 		u_axis = rotation * glm::vec3{ 1,0, 0}; //perhaps should normalize to be extra safe from fp imprecision ?
 		v_axis = rotation * glm::vec3{ 0,1, 0};
-		w_axis = rotation * glm::vec3{ 0,0,-1};
+		w_axis = rotation * glm::vec3{ 0,0,1};
 
 		assert(!anyValueNAN(u_axis));
 		assert(!anyValueNAN(v_axis));
@@ -150,6 +150,9 @@ public:
 	{
 		return glm::lookAt(pos, pos + -w_axis, v_axis);
 	}
+	glm::vec3 getFront() { return -w_axis; }
+	glm::vec3 getRight() { return u_axis; }
+	glm::vec3 getUp() { return v_axis; }
 public: //public so demostrations can easily tweak; tick will correct
 	float cameraSpeed = 10.0f; //NDCs per second
 	float rollSpeed = glm::radians<float>(180.f);
@@ -161,7 +164,7 @@ private: //tick state
 private:
 	glm::vec3 u_axis{ 1.f,0.f,0.f };
 	glm::vec3 v_axis{ 0.f,1.f,0.f };
-	glm::vec3 w_axis{ 0.f,0.f,1.f };
+	glm::vec3 w_axis{ 0.f,0.f,1.f }; 
 	float mouseSensitivity = 0.125f;
 	bool bCursorMode = true;
 };

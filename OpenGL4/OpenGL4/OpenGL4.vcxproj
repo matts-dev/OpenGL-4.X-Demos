@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -84,6 +84,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>assimp-vc140-mt.lib;opengl32.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -106,6 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -154,11 +156,16 @@
     <ClCompile Include="src\demos\tessellation_shaders\2.1_bezier_pointnormal_triangle_tessellation_with_geometry.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\2_bezier_pointnormal_triangle_tessellation.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\3_model_tessellation.cpp" />
+    <ClCompile Include="src\new_utils\cpp_required\ClickableVisualVector.cpp" />
+    <ClCompile Include="src\new_utils\cpp_required\VisualVector.cpp" />
     <ClCompile Include="src\old_utils\CameraFPS.cpp" />
     <ClCompile Include="src\old_utils\nu_utils.cpp" />
     <ClCompile Include="src\old_utils\Shader.cpp" />
     <ClCompile Include="src\old_utils\Texture2D.cpp" />
     <ClCompile Include="src\old_utils\Utilities.cpp" />
+    <ClCompile Include="src\video_examples\ConcreteClasses\opengl_vert_frag_pipeline.cpp" />
+    <ClCompile Include="src\video_examples\ConcreteClasses\ray_triangle_intersection_video.cpp" />
+    <ClCompile Include="src\video_examples\VideoDemoHelperBase.cpp" />
     <ClCompile Include="third_party_src\glad.c" />
     <ClCompile Include="third_party_src\stb_image.cpp" />
   </ItemGroup>
@@ -458,13 +465,30 @@
     <ClInclude Include="includes\imgui.1.69.gl\imstb_truetype.h" />
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
+    <ClInclude Include="src\new_utils\cpp_required\ClickableVisualVector.h" />
+    <ClInclude Include="src\new_utils\header_only\bitmap_font\bitmap_font_base.h" />
+    <ClInclude Include="src\new_utils\header_only\bitmap_font\Montserrat_BitmapFont.h" />
+    <ClInclude Include="src\new_utils\header_only\cube_mesh_from_tris.h" />
+    <ClInclude Include="src\new_utils\header_only\Event.h" />
+    <ClInclude Include="src\new_utils\header_only\line_renderer.h" />
+    <ClInclude Include="src\new_utils\header_only\math_utils.h" />
+    <ClInclude Include="src\new_utils\header_only\opengl_debug_utils.h" />
+    <ClInclude Include="src\new_utils\header_only\ray_utils.h" />
+    <ClInclude Include="src\new_utils\header_only\removes.h" />
+    <ClInclude Include="src\new_utils\header_only\SceneNode.h" />
+    <ClInclude Include="src\new_utils\header_only\shader.h" />
+    <ClInclude Include="src\new_utils\header_only\share_ptr_typedefs.h" />
     <ClInclude Include="src\new_utils\header_only\simple_quaternion_camera.h" />
     <ClInclude Include="src\new_utils\header_only\static_mesh.h" />
+    <ClInclude Include="src\new_utils\header_only\TextureWrapper.h" />
+    <ClInclude Include="src\new_utils\header_only\Transform.h" />
+    <ClInclude Include="src\new_utils\cpp_required\VisualVector.h" />
     <ClInclude Include="src\old_utils\CameraFPS.h" />
     <ClInclude Include="src\old_utils\nu_utils.h" />
     <ClInclude Include="src\old_utils\Shader.h" />
     <ClInclude Include="src\old_utils\Texture2D.h" />
     <ClInclude Include="src\old_utils\Utilities.h" />
+    <ClInclude Include="src\video_examples\VideoDemoHelperBase.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="includes\assimp\color4.inl" />

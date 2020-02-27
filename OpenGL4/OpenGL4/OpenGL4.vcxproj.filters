@@ -114,6 +114,21 @@
     <ClCompile Include="src\demos\tessellation_shaders\3_model_tessellation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\video_examples\ConcreteClasses\opengl_vert_frag_pipeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\video_examples\ConcreteClasses\ray_triangle_intersection_video.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\video_examples\VideoDemoHelperBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\new_utils\cpp_required\VisualVector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\new_utils\cpp_required\ClickableVisualVector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="static_lib\glfw3.lib" />
@@ -1012,6 +1027,57 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\new_utils\header_only\simple_quaternion_camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\math_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\removes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\share_ptr_typedefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\line_renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\video_examples\VideoDemoHelperBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\bitmap_font\bitmap_font_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\Transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\Event.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\SceneNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\TextureWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\bitmap_font\Montserrat_BitmapFont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\opengl_debug_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\cpp_required\VisualVector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\ray_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\cube_mesh_from_tris.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\cpp_required\ClickableVisualVector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
