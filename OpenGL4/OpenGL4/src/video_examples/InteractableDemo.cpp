@@ -122,7 +122,7 @@ void InteractableDemo::render_game(float dt_sec)
 
 void InteractableDemo::render_UI(float dt_sec)
 {
-	ImGui::SetNextWindowPos({ 700, 0 });
+	ImGui::SetNextWindowPos({ 0, 0 });
 	ImGuiWindowFlags flags = 0;
 	ImGui::Begin("Interactable Demo Debug Window", nullptr, flags);
 	if (WindowManager::bEnableDebugUI)

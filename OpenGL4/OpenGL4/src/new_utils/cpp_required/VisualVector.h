@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include "../header_only/Transform.h"
 #include "../header_only/share_ptr_typedefs.h"
 
@@ -28,7 +29,7 @@ namespace nho
 		VisualVector(VisualVector&& move);
 		VisualVector& operator=(VisualVector&& move);
 	public:
-		void render(glm::mat4 projectin_view) const;
+		void render(const glm::mat4& projectin_view, std::optional<glm::vec3> cameraPos) const;
 		void setVector(glm::vec3 newVec);
 		void setStart(glm::vec3 newStart);
 		void setEnd(glm::vec3 newEnd);

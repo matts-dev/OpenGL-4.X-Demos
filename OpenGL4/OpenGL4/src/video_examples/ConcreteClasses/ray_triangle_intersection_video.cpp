@@ -148,6 +148,7 @@ namespace ray_tri_ns
 		sp<ClickableVisualVector> bVec;
 		sp<ho::TextBlockSceneNode> dotProductValue;
 	private://state
+		bool bNormalizeVectors = false;
 		//const VectorCollisionTriangleList* activeClickTarget = nullptr;
 		//sp<nho::TriangleListDebugger> debugRenderer = nullptr;
 		//bool bRightCiickPressed = false;
@@ -239,6 +240,7 @@ namespace ray_tri_ns
 		{
 			slide->init();
 		}
+		glEnable(GL_DEPTH_TEST);
 	}
 
 	void RayTriDemo::inputPoll(float dt_sec)
@@ -271,9 +273,11 @@ namespace ray_tri_ns
 		glClearColor(0.f, 0.f, 0.f, 0.f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+		vec3 camPos = quatCam->getPosition();
+
 		for (VisualVector& vector : visualVectors)
 		{
-			vector.render(frameRenderData.projection_view);
+			vector.render(frameRenderData.projection_view, camPos);
 		}
 
 		if (slideIdx < slides.size())
@@ -287,16 +291,20 @@ namespace ray_tri_ns
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		{
-			static float testFloat = 0.f;
-			ImGui::SetNextWindowPos({ 0,0 });
-			ImGuiWindowFlags flags = 0;
-			ImGui::Begin("OpenGL Tweaker (imgui library)", nullptr, flags);
-			{
-				ImGui::SliderFloat("center CP offset divisor", &testFloat, 0.0f, 1.0f);
-			}
-			ImGui::End();
-		}
+
+		/////////////////////////////////////////////////////////////////////////////////////
+		// Overall demo ui
+		/////////////////////////////////////////////////////////////////////////////////////
+		//{
+		//	static float testFloat = 0.f;
+		//	ImGui::SetNextWindowPos({ 0,0 });
+		//	ImGuiWindowFlags flags = 0;
+		//	ImGui::Begin("OpenGL Tweaker (imgui library)", nullptr, flags);
+		//	{
+		//		//ImGui::SliderFloat("center CP offset divisor", &testFloat, 0.0f, 1.0f);
+		//	}
+		//	ImGui::End();
+		//}
 
 		if (slideIdx < slides.size())
 		{
@@ -335,7 +343,13 @@ namespace ray_tri_ns
 		SlideBase::tick(dt_sec);
 
 		using namespace glm;
-		using std::optional;
+		
+
+		if (bNormalizeVectors)
+		{
+			aVec->setVector(glm::normalize(aVec->getVec()));
+			bVec->setVector(glm::normalize(bVec->getVec()));
+		}
 
 	}
 
@@ -343,8 +357,10 @@ namespace ray_tri_ns
 	{
 		SlideBase::render_game(dt_sec);
 
-		aVec->render(rd->projection_view);
-		bVec->render(rd->projection_view);
+		glm::vec3 camPos = rd->camera->getPosition();
+
+		aVec->render(rd->projection_view, camPos);
+		bVec->render(rd->projection_view, camPos);
 
 		//dotProductValue-> //set text
 		float dotProduct = glm::dot(aVec->getVec(), bVec->getVec());
@@ -365,6 +381,12 @@ namespace ray_tri_ns
 	void Slide_DotProductReview::render_UI(float dt_sec)
 	{
 		SlideBase::render_UI(dt_sec);
+
+		ImGui::SetNextWindowPos({ 700, 0 });
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Dot Product Review", nullptr, flags);
+		ImGui::Checkbox("force normalization", &bNormalizeVectors);
+		ImGui::End();
 	}
 
 	void Slide_DotProductReview::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)

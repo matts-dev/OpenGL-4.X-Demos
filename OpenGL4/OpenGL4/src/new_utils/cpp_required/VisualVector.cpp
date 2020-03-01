@@ -60,6 +60,8 @@ namespace nho
 					uniform vec3 solidColor = vec3(1,0,0);
 					uniform bool bUseLight = false;
 					uniform bool bUseTexture = false;
+					uniform bool bUseCameraLight = false;
+					uniform vec3 cameraPos = vec3(0,0,0);
 
 					struct Material
 					{
@@ -70,9 +72,12 @@ namespace nho
 					void main()
 					{
 						vec4 diffuseTexture = texture(material.texture_diffuse0, fragUV); //wasteful as we may not use this, but since this is demo leaving as it
-						float diffuseFactor = max(dot(dirLight, worldNormal.xyz),0);
+
 						if(bUseLight)
 						{
+							vec3 toLight_n = bUseCameraLight ? normalize(cameraPos - worldPos) : normalize(dirLight);
+							float diffuseFactor = max(dot(toLight_n, worldNormal.xyz),0);
+
 							vec3 colorToUse = bUseTexture ? diffuseTexture.xyz : solidColor.xyz;
 							vec3 diffuse = colorToUse * diffuseFactor;
 							vec3 ambient = colorToUse * 0.05;
@@ -134,7 +139,7 @@ namespace nho
 		return *this;
 	}
 
-void VisualVector::render(glm::mat4 projectin_view) const
+void VisualVector::render(const glm::mat4& projectin_view, std::optional<glm::vec3> cameraPos) const
 {
 	glm::vec3 end = pod.startPos + pod.dir;
 
@@ -149,6 +154,19 @@ void VisualVector::render(glm::mat4 projectin_view) const
 	tipShader->setMat4("model", pod.cachedTipXform);
 	tipShader->setMat4("projection_view", projectin_view);
 	tipShader->setUniform3f("solidColor", color);
+
+	if (cameraPos)
+	{
+		tipShader->setUniform3f("cameraPos", *cameraPos);
+		tipShader->setUniform1i("bUseCameraLight", true);
+		tipShader->setUniform1i("bUseLight", true);
+	}
+	else
+	{
+		tipShader->setUniform1i("bUseCameraLight", true);
+		tipShader->setUniform1i("bUseLight", false);
+	}
+
 	tipMesh->draw(tipShader->shaderProgram);
 }
 
