@@ -64,6 +64,7 @@ namespace nho
 	{
 		bUpdatingFromSceneNode = true;
 		setStart(startCollision->getWorldPosition());
+		endCollision->setLocalPosition(getStart() + getVec());
 		bUpdatingFromSceneNode = false;
 	}
 
