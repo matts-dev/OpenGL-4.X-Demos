@@ -327,7 +327,7 @@ namespace ray_tri_ns
 		aVec = new_sp<ClickableVisualVector>();
 		bVec = new_sp<ClickableVisualVector>();
 
-		aVec->setVector(glm::vec3(-1, 0.f, 0));
+		aVec->setVector(glm::vec3(1, 0.f, 0));
 		bVec->setVector(glm::vec3(0, 1, 0));
 
 		dotProductValue = new_sp<ho::TextBlockSceneNode>(RayTriDemo::font, "0.f");

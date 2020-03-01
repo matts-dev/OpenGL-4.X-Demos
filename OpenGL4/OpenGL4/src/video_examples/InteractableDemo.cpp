@@ -117,6 +117,10 @@ void InteractableDemo::render_game(float dt_sec)
 		{
 			lineRenderer->renderLine(previousRayCast->start, previousRayCast->start + (previousRayCast->dir * 10.f), glm::vec3(1, 0, 0), rd->projection_view);
 		}
+		if (bRenderLineGeneration && start_linePnt && end_linePnt)
+		{
+			lineRenderer->renderLine(start_linePnt->getLocalPosition(), end_linePnt->getLocalPosition(), glm::vec3(1, 0, 0), rd->projection_view);
+		}
 	}
 }
 
@@ -135,7 +139,8 @@ void InteractableDemo::render_UI(float dt_sec)
 
 void InteractableDemo::init()
 {
-
+	nodePool.push_back(new_sp<ho::SceneNode>());
+	nodePool.push_back(new_sp<ho::SceneNode>());
 
 	//same shape is used for all clickable collision, so we can just pick one of the vector's ends.
 	debugCubeRenderer = debugCubeRenderer ? debugCubeRenderer : new_sp<nho::TriangleListDebugger>(ho::TriangleCube{}.triangles);
@@ -184,8 +189,22 @@ void InteractableDemo::inputPoll(float dt_sec)
 					}
 					else
 					{
-						//regenerate the non-hitting ray for debugging purposes
-						previousRayCast = rayCast(raycastQuery);
+						// DRAW LINE BETWEEN POINTS
+						if (previousRayCast = rayCast(raycastQuery))
+						{
+							glm::vec3 camFront = rd->camera->getFront();
+							if (std::optional<glm::vec3> startPnt = RayTests::rayPlaneIntersection(*previousRayCast, -camFront, rd->camera->getPosition() + camFront * lineCreationDistFromCamera))
+							{
+								glm::vec3 endPnt = *startPnt;
+
+								assert(nodePool.size() >= 2);
+								start_linePnt = nodePool[0].get();
+								end_linePnt = nodePool[1].get();
+
+								start_linePnt->setLocalPosition(*startPnt);
+								end_linePnt->setLocalPosition(endPnt);
+							}
+						}
 					}
 
 					glfwGetCursorPos(rd->window, &lastMousePos.x, &lastMousePos.y);
@@ -195,6 +214,8 @@ void InteractableDemo::inputPoll(float dt_sec)
 		else
 		{
 			activeClickTarget = nullptr;
+			start_linePnt = nullptr;
+			end_linePnt = nullptr;
 			bSelectButtonPressed = false;
 		}
 	}
@@ -209,11 +230,21 @@ void InteractableDemo::tick(float dt_sec)
 	{
 		//this will be useful for creating vectors... so not deleting just yet
 
-		//MOVE ALONG PLANE FROM CAMERA
+		ho::SceneNode* targetNode = nullptr;
+
 		if (activeClickTarget && activeClickTarget->owner) 
 		{
-			SceneNode_TriangleList& targetNode = *activeClickTarget->owner;
+			//manipulate some scene node in the demo
+			targetNode = activeClickTarget->owner;
+		}
+		else if (start_linePnt && end_linePnt)
+		{
+			//create a line by dragging mouse
+			targetNode = end_linePnt;
+		}
 
+		if (targetNode)
+		{
 			vec3 cameraPosition = rd->camera->getPosition();
 			vec3 cameraFront = rd->camera->getFront();
 
@@ -226,17 +257,16 @@ void InteractableDemo::tick(float dt_sec)
 			raycastQuery.window = rd->window;
 			if (optional<Ray> ray = rayCast(raycastQuery))
 			{
-				vec3 pointOnPlane = targetNode.getWorldPosition();
+				vec3 pointOnPlane = targetNode->getWorldPosition();
 				const vec3 planeNormal = -cameraFront;
 
 				if (optional<vec3> newPoint = RayTests::rayPlaneIntersection(*ray, planeNormal, pointOnPlane))
 				{
-					const sp<ho::SceneNode>& parent = targetNode.getParent();
+					const sp<ho::SceneNode>& parent = targetNode->getParent();
 					glm::mat4 localFromWorld = parent ? parent->getInverseWorldMat() : mat4(1.f);
 
-					targetNode.setLocalPosition(localFromWorld * glm::vec4(*newPoint, 1.f));
+					targetNode->setLocalPosition(localFromWorld * glm::vec4(*newPoint, 1.f));
 				}
-
 				previousRayCast = ray;
 			}
 		}

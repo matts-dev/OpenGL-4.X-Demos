@@ -80,6 +80,9 @@ protected://state
 public://debug
 	bool bDrawDebugCubes = true;
 	bool bDebugLastRay = true;
+protected:
+	bool bRenderLineGeneration = true;
+	float lineCreationDistFromCamera = 5.0f;
 private: //statics
 	static sp<nho::TriangleListDebugger> debugCubeRenderer;
 	static sp<ho::LineRenderer> lineRenderer;
@@ -87,4 +90,8 @@ private: //statics
 private:
 	bool bSelectButtonPressed = false;
 	glm::dvec2 lastMousePos{ 0.f,0.f };
+private: //implementation details
+	std::vector<sp<ho::SceneNode>> nodePool;
+	ho::SceneNode* start_linePnt= nullptr;
+	ho::SceneNode* end_linePnt = nullptr;
 };
