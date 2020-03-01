@@ -1,11 +1,11 @@
-#include "../VideoDemoHelperBase.h"
+#include "../WindowManager.h"
 #include "../../new_utils/header_only/shader.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Scene Anim class
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class VertFragPipeline final : public VideoDemoHelperBase
+class VertFragPipeline final : public WindowManager
 {
 public:
 	virtual WindowParameters defineWindow();
@@ -22,9 +22,9 @@ private:
 // Impl
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VideoDemoHelperBase::WindowParameters VertFragPipeline::defineWindow()
+WindowManager::WindowParameters VertFragPipeline::defineWindow()
 {
-	VideoDemoHelperBase::WindowParameters params;
+	WindowManager::WindowParameters params;
 	params.windowResolution.x = 600;
 	params.windowResolution.y = 1000;
 	return params;

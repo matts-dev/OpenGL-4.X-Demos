@@ -120,13 +120,19 @@
     <ClCompile Include="src\video_examples\ConcreteClasses\ray_triangle_intersection_video.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\video_examples\VideoDemoHelperBase.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\new_utils\cpp_required\VisualVector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\new_utils\cpp_required\ClickableVisualVector.cpp">
+    <ClCompile Include="src\video_examples\WindowManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\video_examples\InteractableDemo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\video_examples\ClickableVisualVector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\new_utils\cpp_required\TriangleListDebugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1044,9 +1050,6 @@
     <ClInclude Include="src\new_utils\header_only\line_renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\video_examples\VideoDemoHelperBase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\new_utils\header_only\bitmap_font\bitmap_font_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1077,7 +1080,19 @@
     <ClInclude Include="src\new_utils\header_only\cube_mesh_from_tris.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\new_utils\cpp_required\ClickableVisualVector.h">
+    <ClInclude Include="src\video_examples\WindowManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\video_examples\InteractableDemo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\ICamera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\video_examples\ClickableVisualVector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\cpp_required\TriangleListDebugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

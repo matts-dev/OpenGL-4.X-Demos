@@ -23,12 +23,13 @@ namespace ho
 		public IEventSubscriber
 	{
 	public:
-		SceneNode(const sp<SceneNode>& parentNode)
+		SceneNode()
 		{
+			//do not bind to parent in ctor because we cannot get shared_this for event.
 			_bDirty = false;
-			setParent(parentNode);
 			_cleanState();
 		}
+		virtual ~SceneNode() {}
 		//#suggested implement these, be sure that delegate subscription is handled.
 		SceneNode(const SceneNode& copy) = delete;
 		SceneNode(SceneNode&& move) = delete;
@@ -70,23 +71,30 @@ namespace ho
 		}
 
 		glm::vec3 getLocalPosition() { return _localXform.position; }
-		void setLocalPosition(const glm::vec3& pos)
+		virtual void setLocalPosition(const glm::vec3& pos)
 		{
 			_localXform.position = pos;
 			makeDirty();
 		}
 
 		glm::quat getLocalRotation() { return _localXform.rotQuat; }
-		void setLocalRotation(const glm::quat newLocalRotQuat)
+		virtual void setLocalRotation(const glm::quat newLocalRotQuat)
 		{
 			_localXform.rotQuat = newLocalRotQuat;
 			makeDirty();
 		}
 
 		glm::vec3 getLocalScale() { return _localXform.scale; }
-		void setLocalScale(const glm::vec3& newScale )
+		virtual void setLocalScale(const glm::vec3& newScale )
 		{
 			_localXform.scale = newScale;
+			makeDirty();
+		}
+
+		const ho::Transform& getLocalTransform() { return _localXform; }
+		virtual void setLocalTransform(const ho::Transform& newTransform)
+		{
+			_localXform = newTransform;
 			makeDirty();
 		}
 
@@ -96,7 +104,7 @@ namespace ho
 			return cached_WorldPos;
 		}
 
-		glm::mat4  getInverseWorldMat()
+		glm::mat4 getInverseWorldMat()
 		{
 			if (isDirty()) { _cleanState(); }
 			if (!cached_InverseWorldModel.has_value())
@@ -108,19 +116,26 @@ namespace ho
 
 		void setParent(const sp<SceneNode>& newParentSceneNode)
 		{
+			if (newParentSceneNode.get() == this)
+			{
+				return;
+			}
+
 			if (_parentNode)
 			{
-				//remove previous event listener
-				_parentNode->dirtyEvent.removeStrong(sp_this(), &SceneNode::_handleParentDirty);
+				//remove previous event listener (weak binding prevents circular shared pointers)
+				_parentNode->dirtyEvent.removeWeak(sp_this(), &SceneNode::_handleParentDirty);
 			}
 
 			makeDirty();
 			_parentNode = newParentSceneNode;
 			if (_parentNode) //pass null to clear parent.
 			{
-				_parentNode->dirtyEvent.addStrongObj(sp_this(), &SceneNode::_handleParentDirty);
+				_parentNode->dirtyEvent.addWeakObj(sp_this(), &SceneNode::_handleParentDirty);
 			}
 		}
+
+		const sp<SceneNode>& getParent(){return _parentNode;}
 
 		const sp<SceneNode>& getTopParent()
 		{

@@ -175,8 +175,8 @@ public:
 
 		Ray rayFromCamera;
 		rayFromCamera.start = cameraPos_w;
-		rayFromCamera.T = glm::length(click_dir);
-		rayFromCamera.dir = click_dir / rayFromCamera.T; //normalize by dividing by length
+		rayFromCamera.T = std::numeric_limits<float>::infinity();
+		rayFromCamera.dir = glm::normalize(click_dir); 
 		return rayFromCamera;
 	}
 };
@@ -205,6 +205,16 @@ struct TriangleList
 	const std::vector<Triangle>& getLocalTriangles() const { return localTriangles; }
 private: //private because const will prevent default copy
 	std::vector<Triangle> localTriangles;
+};
+
+//#TODO remove this if possible
+template<typename Owner>
+struct OwnedTriangleList : public TriangleList
+{
+	OwnedTriangleList(const std::vector<Triangle>& inLocalTriangles) : TriangleList(inLocalTriangles) {}
+	virtual ~OwnedTriangleList(){}
+	virtual void onUpdated() {}
+	Owner* owner = nullptr;
 };
 
 /** 
@@ -237,7 +247,7 @@ struct CameraRayCastData
 
 struct CameraRayCastData_Triangles : public CameraRayCastData
 {
-	std::vector<TriangleList*> objectList;
+	std::vector<const TriangleList*> objectList;
 	bool validate() const
 	{
 		if (CameraRayCastData::validate())
@@ -260,7 +270,7 @@ struct TriangleObjectRaycastResult
 {
 	float hitT;
 	glm::vec3 hitPoint;
-	TriangleList* hitObject;
+	const TriangleList* hitObject;
 	Ray castRay;
 };
 
@@ -297,25 +307,24 @@ static std::optional<TriangleObjectRaycastResult> rayCast_TriangleObjects(const 
 		if (std::optional<Ray> clickRay = rayCast(rd))
 		{
 			float closestDistance2SoFar = std::numeric_limits<float>::infinity();
-			TriangleList* closestPick = nullptr;
+			const TriangleList* closestPick = nullptr;
 
 			std::optional<float> closestObjT;
 			std::optional<glm::vec3> closestObjHitPoint;
-			for(TriangleList* object : rd.objectList)
+			for(const TriangleList* object : rd.objectList)
 			{
 				std::optional<float> hitT;
 				std::optional<glm::vec3> hitPoint;
 				for (const Triangle& tri : object->worldTriangles)
 				{
-					glm::vec3 testHitPnt;
-					float testT;
-
-					if (RayTests::triangleIntersect(*clickRay, tri, testHitPnt, testT))
+					glm::vec3 iterHitPnt;
+					float iterT;
+					if (RayTests::triangleIntersect(*clickRay, tri, iterHitPnt, iterT))
 					{
-						if (testT > 0 && (!hitT || *hitT < testT))
+						if (iterT > 0 && (!hitT || *hitT < iterT))
 						{
-							hitT = testT;
-							hitPoint = testHitPnt;
+							hitT = iterT;
+							hitPoint = iterHitPnt;
 						}
 					}
 				}

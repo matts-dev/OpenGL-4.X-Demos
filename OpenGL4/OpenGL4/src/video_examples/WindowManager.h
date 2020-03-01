@@ -14,6 +14,7 @@
 
 struct IDemoInterface
 {
+	/** Interface function bodies provided in cpp to allow any subclass to call its super without compile error.*/
 	virtual void init() = 0;
 	virtual void inputPoll(float dt_sec) = 0;
 	virtual void tick(float dt_sec) = 0;
@@ -21,15 +22,27 @@ struct IDemoInterface
 	virtual void render_UI(float dt_sec) = 0;
 };
 
-class VideoDemoHelperBase : public IDemoInterface
+class WindowManager : public IDemoInterface	
 {
 public:
-	VideoDemoHelperBase();
-	~VideoDemoHelperBase();
-	VideoDemoHelperBase(const VideoDemoHelperBase& copy) = delete;
-	VideoDemoHelperBase(VideoDemoHelperBase&& move) = delete;
-	VideoDemoHelperBase& operator=(const VideoDemoHelperBase& copy) = delete;
-	VideoDemoHelperBase& operator=(VideoDemoHelperBase&&move) = delete;
+	static bool bEnableDebugUI;
+public:
+	struct FrameRenderData
+	{
+		GLFWwindow* window = nullptr;
+		struct ICamera* camera = nullptr;
+		glm::mat4 view{ 1.f };
+		glm::mat4 projection{ 1.f };
+		glm::mat4 projection_view{ 1.f };
+	};
+	static FrameRenderData frameRenderData;
+public:
+	WindowManager();
+	~WindowManager();
+	WindowManager(const WindowManager& copy) = delete;
+	WindowManager(WindowManager&& move) = delete;
+	WindowManager& operator=(const WindowManager& copy) = delete;
+	WindowManager& operator=(WindowManager&&move) = delete;
 public:
 	void start();
 protected:

@@ -156,7 +156,8 @@
     <ClCompile Include="src\demos\tessellation_shaders\2.1_bezier_pointnormal_triangle_tessellation_with_geometry.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\2_bezier_pointnormal_triangle_tessellation.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\3_model_tessellation.cpp" />
-    <ClCompile Include="src\new_utils\cpp_required\ClickableVisualVector.cpp" />
+    <ClCompile Include="src\new_utils\cpp_required\TriangleListDebugger.cpp" />
+    <ClCompile Include="src\video_examples\ClickableVisualVector.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\VisualVector.cpp" />
     <ClCompile Include="src\old_utils\CameraFPS.cpp" />
     <ClCompile Include="src\old_utils\nu_utils.cpp" />
@@ -165,7 +166,8 @@
     <ClCompile Include="src\old_utils\Utilities.cpp" />
     <ClCompile Include="src\video_examples\ConcreteClasses\opengl_vert_frag_pipeline.cpp" />
     <ClCompile Include="src\video_examples\ConcreteClasses\ray_triangle_intersection_video.cpp" />
-    <ClCompile Include="src\video_examples\VideoDemoHelperBase.cpp" />
+    <ClCompile Include="src\video_examples\InteractableDemo.cpp" />
+    <ClCompile Include="src\video_examples\WindowManager.cpp" />
     <ClCompile Include="third_party_src\glad.c" />
     <ClCompile Include="third_party_src\stb_image.cpp" />
   </ItemGroup>
@@ -465,11 +467,13 @@
     <ClInclude Include="includes\imgui.1.69.gl\imstb_truetype.h" />
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
-    <ClInclude Include="src\new_utils\cpp_required\ClickableVisualVector.h" />
+    <ClInclude Include="src\new_utils\cpp_required\TriangleListDebugger.h" />
+    <ClInclude Include="src\video_examples\ClickableVisualVector.h" />
     <ClInclude Include="src\new_utils\header_only\bitmap_font\bitmap_font_base.h" />
     <ClInclude Include="src\new_utils\header_only\bitmap_font\Montserrat_BitmapFont.h" />
     <ClInclude Include="src\new_utils\header_only\cube_mesh_from_tris.h" />
     <ClInclude Include="src\new_utils\header_only\Event.h" />
+    <ClInclude Include="src\new_utils\header_only\ICamera.h" />
     <ClInclude Include="src\new_utils\header_only\line_renderer.h" />
     <ClInclude Include="src\new_utils\header_only\math_utils.h" />
     <ClInclude Include="src\new_utils\header_only\opengl_debug_utils.h" />
@@ -488,7 +492,8 @@
     <ClInclude Include="src\old_utils\Shader.h" />
     <ClInclude Include="src\old_utils\Texture2D.h" />
     <ClInclude Include="src\old_utils\Utilities.h" />
-    <ClInclude Include="src\video_examples\VideoDemoHelperBase.h" />
+    <ClInclude Include="src\video_examples\InteractableDemo.h" />
+    <ClInclude Include="src\video_examples\WindowManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="includes\assimp\color4.inl" />

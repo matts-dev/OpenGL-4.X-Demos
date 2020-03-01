@@ -584,7 +584,7 @@ namespace ho
 		TextBlockSceneNode& operator=(const TextBlockSceneNode& copy) = delete;
 		TextBlockSceneNode& operator=(TextBlockSceneNode&& move) = delete;
 		TextBlockSceneNode(sp<BitmapFont> font, const std::string& text)
-			: SceneNode(nullptr)
+			: SceneNode()
 		{
 			wrappedText = new_sp<BitmapTextblock3D>(font, text);
 			wrappedText->hAlignment = HAlignment::CENTER;

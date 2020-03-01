@@ -13,9 +13,34 @@ using wp = std::weak_ptr<T>;
 template<typename T>
 using up = std::unique_ptr<T>;
 
+class Entity
+{
+	template<typename T, typename... Args> 
+	friend sp<T> new_sp(Args&&... args);
+public:
+	virtual ~Entity() {};
+protected:
+	virtual void postConstruct() {}
+};
+
+
 template<typename T, typename... Args>
 sp<T> new_sp(Args&&... args)
 {
+	if constexpr (std::is_base_of<Entity, T>::value)
+	{
+		sp<T> newObj = std::make_shared<T>(std::forward<Args>(args)...);
+
+		//safe cast because of type-trait
+		Entity* newEntity = static_cast<Entity*>(newObj.get());
+		newEntity->postConstruct();
+		return newObj;
+	}
+	else
+	{
+		return std::make_shared<T>(std::forward<Args>(args)...);
+	}
+
 	return std::make_shared<T>(std::forward<Args>(args)...);
 }
 

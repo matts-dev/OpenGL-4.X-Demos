@@ -9,8 +9,9 @@
 #include <glm/gtx/quaternion.hpp>
 #include <assert.h>
 #include "assimp/Compiler/pstdint.h"
+#include "ICamera.h"
 
-class QuaternionCamera final
+class QuaternionCamera final : public ICamera
 {
 public:
 	QuaternionCamera()
@@ -88,6 +89,14 @@ public:
 		{
 			inputVector += -u_axis;
 		}
+		if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+		{
+			inputVector += v_axis;
+		}
+		if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+		{
+			inputVector += -v_axis;
+		}
 		if (glm::length2(inputVector) != 0.f)
 		{
 			inputVector = glm::normalize(inputVector);
@@ -146,16 +155,19 @@ public:
 		assert(!anyValueNAN(w_axis));
 	}
 
-	glm::mat4 getView()
+	virtual glm::mat4 getView() override 
 	{
 		return glm::lookAt(pos, pos + -w_axis, v_axis);
 	}
-	glm::vec3 getFront() { return -w_axis; }
-	glm::vec3 getRight() { return u_axis; }
-	glm::vec3 getUp() { return v_axis; }
+	virtual glm::vec3 getFront() override { return -w_axis; }
+	virtual glm::vec3 getRight() override { return u_axis; }
+	virtual glm::vec3 getUp() override { return v_axis; }
+	virtual glm::vec3 getPosition() override { return pos; }
+	virtual float getFOVy_rad() override { return fovY_rad; }
 public: //public so demostrations can easily tweak; tick will correct
 	float cameraSpeed = 10.0f; //NDCs per second
 	float rollSpeed = glm::radians<float>(180.f);
+	float fovY_rad = glm::radians<float>(45.f);
 	glm::vec3 pos{ 0.f, 0.f, 0.f };
 	glm::quat rotation{ 1.f,0,0,0 };
 	uint32_t cursorModeKey = GLFW_KEY_ESCAPE;

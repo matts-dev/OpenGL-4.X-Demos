@@ -1,4 +1,4 @@
-#include "VideoDemoHelperBase.h"
+#include "WindowManager.h"
 
 #include<iostream>
 
@@ -46,31 +46,60 @@ namespace
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
 
-static std::unordered_map<GLFWwindow*, VideoDemoHelperBase*> windowToOwnerMap;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+// IDemoInterface
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/** Providing method implementations for abstract methods so that subclasses can always call super and compile. This helps
+future proof the code as one can always just call super (without failing to compile) and if the super is added later
+thing will just work rather than creating esoteric bugs by introducing places where code isn't calling super. */
+void IDemoInterface::init(){}
+void IDemoInterface::inputPoll(float dt_sec){}
+void IDemoInterface::tick(float dt_sec){}
+void IDemoInterface::render_game(float dt_sec){}
+void IDemoInterface::render_UI(float dt_sec) {}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+// Window Manager
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static std::unordered_map<GLFWwindow*, WindowManager*> windowToOwnerMap;
+bool WindowManager::bEnableDebugUI = true;
 
 static void static_handleFramebufferSizeChanged(GLFWwindow*window, int width, int height)
 {
-	if (VideoDemoHelperBase* windowManager = windowToOwnerMap[window])
+	if (WindowManager* windowManager = windowToOwnerMap[window])
 	{
 		windowManager->handleFramebufferSizeChanged(width,height);
 	}
 }
 
+/*static*/ WindowManager::FrameRenderData WindowManager::frameRenderData;
 
-VideoDemoHelperBase::VideoDemoHelperBase()
+WindowManager::WindowManager()
 {
 	//need to call virtuals of subclass to get window configuration information, so we do not do window registration here
 }
 
-VideoDemoHelperBase::~VideoDemoHelperBase()
+WindowManager::~WindowManager()
 {
 	windowToOwnerMap.erase(window);
 }
 
-void VideoDemoHelperBase::start()
+void WindowManager::start()
 {
 	WindowParameters windowParams = defineWindow();
 
@@ -140,7 +169,7 @@ void VideoDemoHelperBase::start()
 	}
 }
 
-void VideoDemoHelperBase::handleFramebufferSizeChanged(int width, int height)
+void WindowManager::handleFramebufferSizeChanged(int width, int height)
 {
 	glViewport(0, 0, width, height);
 }

@@ -1187,7 +1187,7 @@ if(anyValueNAN(value))\
 			// Render model
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			glm::mat4 view = camera.getView();
-			glm::mat4 projection = glm::perspective(glm::radians(45.0f), float(windowWidth) / windowHeight, 0.01f, 100.f);
+			glm::mat4 projection = glm::perspective(camera.getFOVy_rad(), float(windowWidth) / windowHeight, 0.01f, 100.f);
 			glUniform1i(bUseSingleGlobalTL_ul, int(bUseSingleGlobalTL)); //controls whether or not to allow independent outer levels
 			glUniform1i(bUseSingleOuterTL_ul, int(bUseSingleOuterTL)); //controls whether or not to allow independent outer levels
 			glUniform1i(bUseLight_ul, int(bUseLight)); //controls whether or not to allow independent outer levels
