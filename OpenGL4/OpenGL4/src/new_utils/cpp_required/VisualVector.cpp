@@ -167,6 +167,12 @@ void VisualVector::setStart(glm::vec3 newStart)
 	updateCache();
 }
 
+void VisualVector::setEnd(glm::vec3 newEnd)
+{
+	glm::vec3 newDir = newEnd - pod.startPos;
+	setVector(newDir);
+}
+
 void VisualVector::updateCache()
 {
 	glm::quat tipRotation = MathUtils::getRotationBetween(glm::vec3(0.f, 0.f, 1.f), pod.dir_n);

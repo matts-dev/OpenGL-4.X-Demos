@@ -5,6 +5,7 @@
 #include "../new_utils/header_only/Transform.h"
 #include "../new_utils/cpp_required/VisualVector.h"
 #include "../new_utils/header_only/ray_utils.h"
+#include "../new_utils/header_only/Event.h"
 #include "./InteractableDemo.h"
 namespace nho
 {
@@ -28,6 +29,8 @@ namespace nho
 	{
 	public:
 		SceneNode_VectorEnd();
+	public:
+		const VectorCollisionTriangleList& getTriangleList() { return *myTriangleBox; }
 	private:
 		VectorCollisionTriangleList* myTriangleBox;
 	};
@@ -35,16 +38,30 @@ namespace nho
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Visual vector that allows user interaction with its ends
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	struct ClickableVisualVector : public VisualVector
+	struct ClickableVisualVector : 
+		public VisualVector,
+		public std::enable_shared_from_this<ClickableVisualVector>,
+		public ho::IEventSubscriber
 	{
 		ClickableVisualVector();
 		ClickableVisualVector(const ClickableVisualVector& copy);
 		ClickableVisualVector& operator=(const ClickableVisualVector& copy);
+		//ClickableVisualVector(ClickableVisualVector&& move) = delete;
+		//ClickableVisualVector& operator=(ClickableVisualVector&& move) = delete;
 		virtual void onValuesUpdated(const VisualVector::POD& values) override;
+	protected:
+		virtual void postConstruct() override;
 	private:
 		void sharedInit();
+
+		void handleStartDirty();
+		void handleEndDirty();
+		void handleStartCollisionUpdated();
+		void handleEndCollisionUpdated();
 	public:
 		sp<SceneNode_VectorEnd> startCollision;
 		sp<SceneNode_VectorEnd> endCollision;
+	private:
+		bool bUpdatingFromSceneNode = false;
 	};
 }

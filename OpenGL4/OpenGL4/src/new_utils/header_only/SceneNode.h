@@ -180,6 +180,7 @@ namespace ho
 				_updateCachesPostClean();
 				_bDirty = false;
 				v_CleanComplete();
+				updatedEvent.broadcast();
 			}
 
 			//return true if recalculation happened
@@ -200,6 +201,7 @@ namespace ho
 		}
 	public:
 		Event<> dirtyEvent;
+		Event<> updatedEvent;
 	private:
 		bool _bDirty = false;
 		Transform _localXform{};

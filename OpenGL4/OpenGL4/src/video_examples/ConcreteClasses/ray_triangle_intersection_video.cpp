@@ -144,8 +144,8 @@ namespace ray_tri_ns
 		virtual void render_UI(float dt_sec) override;
 		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
 	private://visuals
-		ClickableVisualVector aVec;
-		ClickableVisualVector bVec;
+		sp<ClickableVisualVector> aVec;
+		sp<ClickableVisualVector> bVec;
 		sp<ho::TextBlockSceneNode> dotProductValue;
 	private://state
 		//const VectorCollisionTriangleList* activeClickTarget = nullptr;
@@ -316,8 +316,11 @@ namespace ray_tri_ns
 	{
 		SlideBase::init();
 
-		aVec.setVector(glm::vec3(-1, 0.f, 0));
-		bVec.setVector(glm::vec3(0, 1, 0));
+		aVec = new_sp<ClickableVisualVector>();
+		bVec = new_sp<ClickableVisualVector>();
+
+		aVec->setVector(glm::vec3(-1, 0.f, 0));
+		bVec->setVector(glm::vec3(0, 1, 0));
 
 		dotProductValue = new_sp<ho::TextBlockSceneNode>(RayTriDemo::font, "0.f");
 	}
@@ -340,11 +343,11 @@ namespace ray_tri_ns
 	{
 		SlideBase::render_game(dt_sec);
 
-		aVec.render(rd->projection_view);
-		bVec.render(rd->projection_view);
+		aVec->render(rd->projection_view);
+		bVec->render(rd->projection_view);
 
 		//dotProductValue-> //set text
-		float dotProduct = glm::dot(aVec.getVec(), bVec.getVec());
+		float dotProduct = glm::dot(aVec->getVec(), bVec->getVec());
 
 		char textBuffer[128];
 		snprintf(textBuffer, sizeof(textBuffer), "%3.3f", dotProduct);
@@ -352,8 +355,8 @@ namespace ray_tri_ns
 
 		dotProductValue->setLocalScale(glm::vec3(10.f));
 		dotProductValue->setLocalPosition(
-			aVec.getStart()
-			+ aVec.getVec() + 0.5f * glm::normalize(aVec.getVec())
+			aVec->getStart()
+			+ aVec->getVec() + 0.5f * glm::normalize(aVec->getVec())
 			+ glm::vec3(0.f, 1.f, 0.f) * 0.5f);
 		dotProductValue->render(rd->projection, rd->view);
 
@@ -366,10 +369,10 @@ namespace ray_tri_ns
 
 	void Slide_DotProductReview::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
 	{
-		objectList.push_back(&aVec.startCollision->getTriangleList());
-		objectList.push_back(&aVec.endCollision->getTriangleList());
-		objectList.push_back(&bVec.startCollision->getTriangleList());
-		objectList.push_back(&bVec.endCollision->getTriangleList());
+		objectList.push_back(&aVec->startCollision->getTriangleList());
+		objectList.push_back(&aVec->endCollision->getTriangleList());
+		objectList.push_back(&bVec->startCollision->getTriangleList());
+		objectList.push_back(&bVec->endCollision->getTriangleList());
 	}
 }
 

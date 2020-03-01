@@ -16,12 +16,13 @@ namespace StaticMesh
 namespace nho
 {
 
-	class VisualVector
+	class VisualVector : public Entity
 	{
 	public:
 		VisualVector();
 		~VisualVector();
 
+		/** Converting to entity so move/copy semantics cacn probably be disregarded*/
 		VisualVector(const VisualVector& copy);
 		VisualVector& operator=(const VisualVector& copy);
 		VisualVector(VisualVector&& move);
@@ -30,6 +31,7 @@ namespace nho
 		void render(glm::mat4 projectin_view) const;
 		void setVector(glm::vec3 newVec);
 		void setStart(glm::vec3 newStart);
+		void setEnd(glm::vec3 newEnd);
 
 		glm::vec3 getVec() { return pod.dir; }
 		glm::vec3 getStart() { return pod.startPos; }

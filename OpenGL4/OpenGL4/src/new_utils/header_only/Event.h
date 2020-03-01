@@ -199,7 +199,7 @@ namespace ho
 		template<typename T>
 		void addWeakObj(const sp<T>& obj, void(T::*fptr)(Args...))
 		{
-			static_assert(std::is_base_of<IEventSubscriber, T>::value, "Delegates are only supported for game entity inheriting classes.");
+			static_assert(std::is_base_of<IEventSubscriber, T>::value, "Delegates are only supported for IEventSubscriber inheriting classes.");
 
 			//store the concrete type (T) into a type (WeakSubscriber) that hides (WeakAgnosticSubscriber) the concrete template type for storage
 			sp<WeakAgnosticSubscriber<Args...>> subscriber = new_sp<WeakSubscriber<T, Args...>>(obj, fptr);
