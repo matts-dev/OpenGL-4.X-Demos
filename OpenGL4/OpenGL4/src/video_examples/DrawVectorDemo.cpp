@@ -64,10 +64,9 @@ void DrawVectorDemo::tick_selectVectors(float dt_sec)
 					{
 						if (sn && sn->owner)
 						{
-							if (selectionLater)
+							if (selectionFormer)
 							{
-								selectionLater->color = glm::vec3(1, 1, 1);
-
+								selectionFormer->color = glm::vec3(1, 1, 1);
 							}
 
 							selectionFormer = selectionLater;
