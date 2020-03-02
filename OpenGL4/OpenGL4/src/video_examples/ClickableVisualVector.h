@@ -31,6 +31,8 @@ namespace nho
 		SceneNode_VectorEnd();
 	public:
 		const VectorCollisionTriangleList& getTriangleList() { return *myTriangleBox; }
+	public:
+		struct ClickableVisualVector* owner = nullptr;
 	private:
 		VectorCollisionTriangleList* myTriangleBox;
 	};
@@ -49,6 +51,7 @@ namespace nho
 		//ClickableVisualVector(ClickableVisualVector&& move) = delete;
 		//ClickableVisualVector& operator=(ClickableVisualVector&& move) = delete;
 		virtual void onValuesUpdated(const VisualVector::POD& values) override;
+		sp<ClickableVisualVector> getShared() { return sp_this(); }
 	protected:
 		virtual void postConstruct() override;
 	private:

@@ -22,6 +22,10 @@ namespace nho
 	{
 		startCollision = new_sp<SceneNode_VectorEnd>();
 		endCollision = new_sp<SceneNode_VectorEnd>();
+
+		//not well enough encapsulated
+		startCollision->owner = this;
+		endCollision->owner = this;
 	}
 
 	void ClickableVisualVector::onValuesUpdated(const VisualVector::POD& values)

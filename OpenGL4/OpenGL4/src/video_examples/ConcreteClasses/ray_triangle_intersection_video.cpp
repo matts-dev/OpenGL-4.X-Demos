@@ -55,6 +55,7 @@
 #include "../InteractableDemo.h"
 #include "../ClickableVisualVector.h"
 #include "../../new_utils/header_only/cube_mesh_from_tris.h"
+#include "../DrawVectorDemo.h"
 
 using nho::VisualVector;
 using nho::ClickableVisualVector;
@@ -63,7 +64,8 @@ using nho::VectorCollisionTriangleList;
 
 namespace ray_tri_ns
 {
-	class SlideBase : public InteractableDemo
+	//class SlideBase : public InteractableDemo
+	class SlideBase : public DrawVectorDemo
 	{
 
 	};
@@ -114,6 +116,7 @@ namespace ray_tri_ns
 	/////////////////////////////////////////////////////////////////////////////////////
 	// slides
 	/////////////////////////////////////////////////////////////////////////////////////
+
 	struct Slide_HighlevelOverview : public SlideBase
 	{
 
@@ -391,6 +394,8 @@ namespace ray_tri_ns
 
 	void Slide_DotProductReview::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
 	{
+		SlideBase::gatherInteractableCubeObjects(objectList);
+
 		objectList.push_back(&aVec->startCollision->getTriangleList());
 		objectList.push_back(&aVec->endCollision->getTriangleList());
 		objectList.push_back(&bVec->startCollision->getTriangleList());

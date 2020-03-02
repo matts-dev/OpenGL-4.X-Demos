@@ -187,6 +187,7 @@ struct TriangleList
 		: localTriangles(inLocalTriangles),
 		worldTriangles(worldTriangles)
 	{}
+	virtual ~TriangleList(){}
 	virtual void transform(const glm::mat4& model)
 	{
 		if (worldTriangles.size() != localTriangles.size())

@@ -302,6 +302,31 @@ void InteractableDemo::tick(float dt_sec)
 
 }
 
+std::optional<glm::vec3> InteractableDemo::getDrawLineStart()
+{
+	if (start_linePnt)
+	{
+		return start_linePnt->getLocalPosition();
+	}
+
+	return std::nullopt;
+}
+
+std::optional<glm::vec3> InteractableDemo::getDrawLineEnd()
+{
+	if (end_linePnt)
+	{
+		return end_linePnt->getLocalPosition();
+	}
+
+	return std::nullopt;
+}
+
+void InteractableDemo::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+{
+	//default do nothing so base classes can call super
+}
+
 /*static*/ sp<nho::TriangleListDebugger> InteractableDemo::debugCubeRenderer = nullptr;
 /*static*/sp<ho::LineRenderer> InteractableDemo::lineRenderer = nullptr;
 /*static*/ int32_t InteractableDemo::instanceCount = 0;

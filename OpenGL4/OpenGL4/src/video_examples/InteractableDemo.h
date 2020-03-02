@@ -62,12 +62,15 @@ public:
 	InteractableDemo& operator=(const InteractableDemo& copy) = delete;
 	InteractableDemo& operator=(InteractableDemo&& move) = delete;
 	virtual ~InteractableDemo();
-public:
+public: //api
 	virtual void init() override;
 	virtual void render_game(float dt_sec) override;
 	virtual void render_UI(float dt_sec) override;
 	virtual void inputPoll(float dt_sec)override;
 	virtual void tick(float dt_sec)override;
+public:
+	std::optional<glm::vec3> getDrawLineStart();
+	std::optional<glm::vec3> getDrawLineEnd();
 protected:
 	/** override this to provide the list of objects you want to be tested when ray casting*/
 	virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) = 0;
