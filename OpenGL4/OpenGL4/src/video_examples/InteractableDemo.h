@@ -88,6 +88,7 @@ public://debug
 protected:
 	bool bRenderLineGeneration = true;
 	float lineCreationDistFromCamera = 5.0f;
+	float lineCreationDistAdjustSpeedSec = 5.0f;
 private: //statics
 	static sp<nho::TriangleListDebugger> debugCubeRenderer;
 	static sp<ho::LineRenderer> lineRenderer;

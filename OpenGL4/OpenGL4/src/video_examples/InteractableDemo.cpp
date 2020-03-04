@@ -171,6 +171,10 @@ void InteractableDemo::inputPoll(float dt_sec)
 {
 	if (rd && rd->camera && rd->window)
 	{
+		bool bCTRL = glfwGetKey(rd->window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS || glfwGetKey(rd->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+		bool bALT = glfwGetKey(rd->window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS || glfwGetKey(rd->window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
+		bool bSHIFT = glfwGetKey(rd->window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS || glfwGetKey(rd->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+
 		if (glfwGetMouseButton(rd->window, selectMouseButton) == GLFW_PRESS )
 		{
 			if (!bSelectButtonPressed) //must be in a separate branch from above to prevent releasing hold
@@ -235,6 +239,16 @@ void InteractableDemo::inputPoll(float dt_sec)
 			start_linePnt = nullptr;
 			end_linePnt = nullptr;
 			bSelectButtonPressed = false;
+		}
+
+
+		if (glfwGetKey(rd->window, GLFW_KEY_O) == GLFW_PRESS)
+		{
+			lineCreationDistFromCamera += dt_sec * lineCreationDistAdjustSpeedSec * (bSHIFT?0.1f:1.f) * (bCTRL?10.f:1.f);
+		}
+		else if (glfwGetKey(rd->window, GLFW_KEY_I) == GLFW_PRESS)
+		{
+			lineCreationDistFromCamera -= dt_sec * lineCreationDistAdjustSpeedSec * (bSHIFT?0.1f:1.f) * (bCTRL?10.f:1.f);
 		}
 
 	}
