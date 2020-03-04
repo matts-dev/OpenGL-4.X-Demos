@@ -10,6 +10,7 @@
 #include "../new_utils/header_only/SceneNode.h"
 #include "../new_utils/cpp_required/TriangleListDebugger.h"
 #include "../new_utils/header_only/line_renderer.h"
+#include "../new_utils/header_only/plane_renderer.h"
 
 class SceneNode_TriangleList;
 
@@ -83,12 +84,14 @@ protected://state
 public://debug
 	bool bDrawDebugCubes = true;
 	bool bDebugLastRay = true;
+	bool bDrawInteractionPlane = false;
 protected:
 	bool bRenderLineGeneration = true;
 	float lineCreationDistFromCamera = 5.0f;
 private: //statics
 	static sp<nho::TriangleListDebugger> debugCubeRenderer;
 	static sp<ho::LineRenderer> lineRenderer;
+	static sp<ho::PlaneRenderer> planeRenderer;
 	static int32_t instanceCount;
 private:
 	bool bSelectButtonPressed = false;

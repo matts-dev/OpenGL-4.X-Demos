@@ -53,7 +53,7 @@ if(anyValueNAN(value))\
 
 	static glm::quat getRotationBetween(const glm::vec3& from_n, const glm::vec3& to_n)
 	{
-		glm::quat rot; //unit quaternion;
+		glm::quat rot = glm::quat{ 1, 0, 0, 0 };
 
 		float cosTheta = glm::clamp(glm::dot(from_n, to_n), -1.f, 1.f);
 

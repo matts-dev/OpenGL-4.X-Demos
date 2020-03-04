@@ -92,11 +92,14 @@ InteractableDemo::~InteractableDemo()
 	{
 		debugCubeRenderer = nullptr;
 		lineRenderer = nullptr;
+		planeRenderer = nullptr;
 	}
 }
 
 void InteractableDemo::render_game(float dt_sec)
 {
+	using namespace glm;
+
 	if (rd)
 	{
 		if (bDrawDebugCubes)
@@ -121,6 +124,16 @@ void InteractableDemo::render_game(float dt_sec)
 		{
 			lineRenderer->renderLine(start_linePnt->getLocalPosition(), end_linePnt->getLocalPosition(), glm::vec3(1, 0, 0), rd->projection_view);
 		}
+		if (bDrawInteractionPlane)
+		{
+			vec3 camPos = rd->camera->getPosition();
+			vec3 camFront = rd->camera->getFront();
+			vec3 planePnt = camPos + camFront * lineCreationDistFromCamera;
+			
+			vec3 scale{ lineCreationDistFromCamera * 4}; //this is a rather abritray value that is somewhat related to the camera
+
+			planeRenderer->renderPlane(planePnt, -camFront , scale, vec4(vec3(0.1f), 1), rd->projection_view);
+		}
 	}
 }
 
@@ -133,6 +146,7 @@ void InteractableDemo::render_UI(float dt_sec)
 	{
 		ImGui::Checkbox("draw debug cubes", &bDrawDebugCubes);
 		ImGui::Checkbox("debug ray cast", &bDebugLastRay);
+		ImGui::Checkbox("draw interaction plane", &bDrawInteractionPlane);
 	}
 	ImGui::End();
 }
@@ -144,7 +158,11 @@ void InteractableDemo::init()
 
 	//same shape is used for all clickable collision, so we can just pick one of the vector's ends.
 	debugCubeRenderer = debugCubeRenderer ? debugCubeRenderer : new_sp<nho::TriangleListDebugger>(ho::TriangleCube{}.triangles);
+
 	lineRenderer = lineRenderer ? lineRenderer : new_sp<ho::LineRenderer>();
+
+	planeRenderer = planeRenderer ? planeRenderer : new_sp<ho::PlaneRenderer>();
+	planeRenderer->bScreenDoorEffect = true;
 
 	instanceCount++;
 }
@@ -218,6 +236,7 @@ void InteractableDemo::inputPoll(float dt_sec)
 			end_linePnt = nullptr;
 			bSelectButtonPressed = false;
 		}
+
 	}
 }
 
@@ -328,6 +347,7 @@ void InteractableDemo::gatherInteractableCubeObjects(std::vector<const TriangleL
 }
 
 /*static*/ sp<nho::TriangleListDebugger> InteractableDemo::debugCubeRenderer = nullptr;
-/*static*/sp<ho::LineRenderer> InteractableDemo::lineRenderer = nullptr;
+/*static*/ sp<ho::LineRenderer> InteractableDemo::lineRenderer = nullptr;
+/*static*/ sp<ho::PlaneRenderer> InteractableDemo::planeRenderer = nullptr;
 /*static*/ int32_t InteractableDemo::instanceCount = 0;
 

@@ -1101,6 +1101,9 @@
     <ClInclude Include="src\video_examples\DrawVectorDemo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\plane_renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="includes\glm\detail\func_common.inl">

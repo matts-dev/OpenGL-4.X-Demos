@@ -96,7 +96,7 @@ namespace ho
 		}
 
 	public:
-		sp<Shader> shader = nullptr;
+		sp<ho::Shader> shader = nullptr;
 		GLuint vao = 0;
 		GLuint vboPositions = 0;
 	};

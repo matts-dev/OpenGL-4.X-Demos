@@ -469,6 +469,7 @@
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
     <ClInclude Include="src\new_utils\cpp_required\TriangleListDebugger.h" />
+    <ClInclude Include="src\new_utils\header_only\plane_renderer.h" />
     <ClInclude Include="src\video_examples\ClickableVisualVector.h" />
     <ClInclude Include="src\new_utils\header_only\bitmap_font\bitmap_font_base.h" />
     <ClInclude Include="src\new_utils\header_only\bitmap_font\Montserrat_BitmapFont.h" />
