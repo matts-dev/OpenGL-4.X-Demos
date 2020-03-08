@@ -157,6 +157,8 @@ void WindowManager::start()
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
 		aspect = float(width) / height;
+		frameRenderData.fbHeight = float(height);
+		frameRenderData.fbWidth = float(width);
 
 		glfwPollEvents();
 
@@ -172,4 +174,6 @@ void WindowManager::start()
 void WindowManager::handleFramebufferSizeChanged(int width, int height)
 {
 	glViewport(0, 0, width, height);
+	frameRenderData.fbHeight = float(height);
+	frameRenderData.fbWidth = float(width);
 }

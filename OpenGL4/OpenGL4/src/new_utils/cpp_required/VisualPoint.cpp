@@ -1,4 +1,6 @@
-#include "VisualVector.h"
+#include "VisualPoint.h"
+
+
 #include "../header_only/shader.h"
 #include "../header_only/line_renderer.h"
 #include "../header_only/math_utils.h"
@@ -11,21 +13,20 @@ namespace nho
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// statics
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/*static*/int nho::VisualVector::numInstances = 0;
-	/*static*/sp<StaticMesh::Model> VisualVector::tipMesh = nullptr;
-	/*static*/sp<ho::Shader> VisualVector::tipShader = nullptr;
-	/*static*/sp<ho::LineRenderer> VisualVector::lineRenderer = nullptr;
+	/*static*/int nho::VisualPoint::numInstances = 0;
+	/*static*/sp<StaticMesh::Model> VisualPoint::pointMesh = nullptr;
+	/*static*/sp<ho::Shader> VisualPoint::pointShader = nullptr;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// members
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	VisualVector::VisualVector()
+	VisualPoint::VisualPoint()
 	{
 		numInstances++;
 		if (numInstances == 1)
 		{
-			ho::Shader::ShaderParams coneShaderInit;
-			coneShaderInit.vertex_src = R"(
+			ho::Shader::ShaderParams sphereShaderInit;
+			sphereShaderInit.vertex_src = R"(
 					#version 410 core
 
 					layout (location = 0) in vec3 position;				
@@ -47,7 +48,7 @@ namespace nho
 						gl_Position = projection_view * vec4(worldPos, 1.f);
 					}
 				)";
-			coneShaderInit.fragment_src = R"(
+			sphereShaderInit.fragment_src = R"(
 					#version 410 core
 
 					out vec4 fragmentColor;
@@ -96,13 +97,12 @@ namespace nho
 						}
 					}
 				)";
-			tipShader = new_up<ho::Shader>(coneShaderInit);
-			lineRenderer = new_sp<ho::LineRenderer>();
-			tipMesh = new_sp<StaticMesh::Model>("./assets/models/cone_tip/cone_tip.obj");
+			pointShader = new_up<ho::Shader>(sphereShaderInit);
+			pointMesh = new_sp<StaticMesh::Model>("./assets/models/sphere/ico_sphere.obj");
 		}
 	}
 
-	VisualVector::VisualVector(const VisualVector& copy)
+	VisualPoint::VisualPoint(const VisualPoint& copy)
 	{
 		if (&copy != this)
 		{
@@ -114,7 +114,7 @@ namespace nho
 	}
 
 
-	VisualVector::VisualVector(VisualVector&& move)
+	VisualPoint::VisualPoint(VisualPoint&& move)
 	{
 		if (&move != this)
 		{
@@ -126,7 +126,7 @@ namespace nho
 		}
 	}
 
-	nho::VisualVector& VisualVector::operator=(VisualVector&& move)
+	nho::VisualPoint& VisualPoint::operator=(VisualPoint&& move)
 	{
 		if (&move != this)
 		{
@@ -139,84 +139,54 @@ namespace nho
 		return *this;
 	}
 
-void VisualVector::render(const glm::mat4& projection_view, std::optional<glm::vec3> cameraPos) const
-{
-	glm::vec3 end = pod.startPos + pod.dir;
-
-	lineRenderer->renderLine(
-		pod.startPos,
-		end,
-		color,
-		projection_view
-	);
-
-	tipShader->use();
-	tipShader->setMat4("model", pod.cachedTipXform);
-	tipShader->setMat4("projection_view", projection_view);
-	tipShader->setUniform3f("solidColor", color);
-
-	if (cameraPos)
+	void VisualPoint::render(const glm::mat4& projection_view, std::optional<glm::vec3> cameraPos) const
 	{
-		tipShader->setUniform3f("cameraPos", *cameraPos);
-		tipShader->setUniform1i("bUseCameraLight", true);
-		tipShader->setUniform1i("bUseLight", true);
-	}
-	else
-	{
-		tipShader->setUniform1i("bUseCameraLight", true);
-		tipShader->setUniform1i("bUseLight", false);
+		pointShader->use();
+		pointShader->setMat4("model", pod.cachedXform);
+		pointShader->setMat4("projection_view", projection_view);
+		pointShader->setUniform3f("solidColor", color);
+
+		if (cameraPos)
+		{
+			pointShader->setUniform3f("cameraPos", *cameraPos);
+			pointShader->setUniform1i("bUseCameraLight", true);
+			pointShader->setUniform1i("bUseLight", true);
+		}
+		else
+		{
+			pointShader->setUniform1i("bUseCameraLight", true);
+			pointShader->setUniform1i("bUseLight", false);
+		}
+
+		pointMesh->draw(pointShader->shaderProgram);
 	}
 
-	tipMesh->draw(tipShader->shaderProgram);
-}
+	void VisualPoint::setPosition(glm::vec3 newStart)
+	{
+		pod.position = newStart;
 
-void VisualVector::setVector(glm::vec3 newVec)
-{
-	pod.dir = newVec;
-	pod.dir_n = glm::normalize(pod.dir);
+		updateCache();
+	}
 
-	updateCache();
-}
+	void VisualPoint::updateCache()
+	{
+		pod.cachedXform = glm::translate(glm::mat4(1.f), pod.position);
+		pod.cachedXform = glm::scale(pod.cachedXform, glm::vec3(0.025f));
+		onValuesUpdated(pod);
+	}
 
-void VisualVector::setStart(glm::vec3 newStart)
-{
-	pod.startPos = newStart;
-
-	updateCache();
-}
-
-void VisualVector::setEnd(glm::vec3 newEnd)
-{
-	glm::vec3 newDir = newEnd - pod.startPos;
-	setVector(newDir);
-}
-
-void VisualVector::updateCache()
-{
-	glm::quat tipRotation = MathUtils::getRotationBetween(glm::vec3(0.f, 0.f, 1.f), pod.dir_n);
-
-	glm::vec3 end = pod.startPos + pod.dir;
-
-	pod.cachedTipXform = glm::translate(glm::mat4(1.f), end);
-	pod.cachedTipXform = pod.cachedTipXform * glm::toMat4(tipRotation);
-	pod.cachedTipXform = glm::scale(pod.cachedTipXform, glm::vec3(0.1f));
-
-	onValuesUpdated(pod);
-}
-
-VisualVector::~VisualVector()
+	VisualPoint::~VisualPoint()
 	{
 		numInstances--;
 		if (numInstances == 0)
 		{
 			/*static*/ numInstances = 0;
-			/*static*/ tipMesh = nullptr;
-			/*static*/ tipShader = nullptr;
-			/*static*/ lineRenderer = nullptr;
+			/*static*/ pointMesh = nullptr;
+			/*static*/ pointShader = nullptr;
 		}
 	}
 
-	nho::VisualVector& VisualVector::operator=(const VisualVector& copy)
+	nho::VisualPoint& VisualPoint::operator=(const VisualPoint& copy)
 	{
 		if (&copy != this)
 		{

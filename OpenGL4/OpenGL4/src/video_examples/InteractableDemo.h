@@ -82,8 +82,8 @@ protected://state
 	std::optional<Ray> previousRayCast;
 	WindowManager::FrameRenderData* rd = nullptr; 
 public://debug
-	bool bDrawDebugCubes = true;
-	bool bDebugLastRay = true;
+	bool bDrawDebugCubes = false;
+	bool bDebugLastRay = false;
 	bool bDrawInteractionPlane = false;
 protected:
 	bool bRenderLineGeneration = true;

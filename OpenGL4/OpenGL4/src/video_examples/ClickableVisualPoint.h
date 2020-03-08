@@ -1,24 +1,28 @@
 #pragma once
+
 #include <memory>
-//#include "../header_only/ray_utils.h"
+
 #include "../new_utils/header_only/shader.h"
 #include "../new_utils/header_only/SceneNode.h"
 #include "../new_utils/header_only/Transform.h"
 #include "../new_utils/cpp_required/VisualVector.h"
 #include "../new_utils/header_only/ray_utils.h"
 #include "../new_utils/header_only/Event.h"
-#include "InteractableDemo.h" //TriangleList_SNO
-namespace nho 
-{
+#include "../new_utils/cpp_required/VisualPoint.h"
 
+#include "ClickableVisualVector.h"
+
+/** This is a quick copy paste of the visual vector class -- refer to that for questions/comments about implementation */
+namespace nho
+{
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// A triangle list that has extra data for making interaction influence a clickable visual vector
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	struct VectorCollisionTriangleList 
+	struct PointCollisionTriangleList
 		: public TriangleList_SNO
 	{
-		VectorCollisionTriangleList();
+		PointCollisionTriangleList();
 		glm::mat4 cachedPreviousXform;
 		bool bRepresentsTip = false;
 	};
@@ -26,46 +30,41 @@ namespace nho
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// scene wrapper around vector collision triangle list
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	class SceneNode_VectorEnd : public SceneNode_TriangleList
+	class SceneNode_Point : public SceneNode_TriangleList
 	{
 	public:
-		SceneNode_VectorEnd();
+		SceneNode_Point();
 	public:
-		const VectorCollisionTriangleList& getTriangleList() { return *myTriangleBox; }
+		const PointCollisionTriangleList& getTriangleList() { return *myTriangleBox; }
 	public:
-		struct ClickableVisualVector* owner = nullptr;
+		struct ClickableVisualPoint* owner = nullptr;
 	private:
-		VectorCollisionTriangleList* myTriangleBox;
+		PointCollisionTriangleList* myTriangleBox;
 	};
+
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Visual vector that allows user interaction with its ends
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	struct ClickableVisualVector : 
-		public VisualVector,
-		public std::enable_shared_from_this<ClickableVisualVector>,
+	struct ClickableVisualPoint :
+		public nho::VisualPoint,
+		public std::enable_shared_from_this<ClickableVisualPoint>,
 		public ho::IEventSubscriber
 	{
-		ClickableVisualVector();
-		ClickableVisualVector(const ClickableVisualVector& copy);
-		ClickableVisualVector& operator=(const ClickableVisualVector& copy);
-		//ClickableVisualVector(ClickableVisualVector&& move) = delete;
-		//ClickableVisualVector& operator=(ClickableVisualVector&& move) = delete;
-		virtual void onValuesUpdated(const VisualVector::POD& values) override;
-		sp<ClickableVisualVector> getShared() { return sp_this(); }
+		ClickableVisualPoint();
+		//ClickableVisualPoint(const ClickableVisualPoint& copy);
+		//ClickableVisualPoint& operator=(const ClickableVisualPoint& copy);
+		virtual void onValuesUpdated(const nho::VisualPoint::POD& values) override;
+		sp<ClickableVisualPoint> getShared() { return sp_this(); }
 	protected:
 		virtual void postConstruct() override;
 	private:
 		void sharedInit();
-
 		void handleStartDirty();
-		void handleEndDirty();
-		void handleStartCollisionUpdated();
-		void handleEndCollisionUpdated();
+		void handlePointCollisionUpdated();
 	public:
-		sp<SceneNode_VectorEnd> startCollision;
-		sp<SceneNode_VectorEnd> endCollision;
+		sp<nho::SceneNode_Point> pointCollision;
 	private:
 		bool bUpdatingFromSceneNode = false;
 	};
-}
+};

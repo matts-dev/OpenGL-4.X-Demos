@@ -138,6 +138,15 @@
     <ClCompile Include="src\video_examples\DrawVectorDemo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\video_examples\ClickableVisualPoint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\new_utils\cpp_required\VisualPoint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\video_examples\ClickableVisualRay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="static_lib\glfw3.lib" />
@@ -1102,6 +1111,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\new_utils\header_only\plane_renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\header_only\ImmediateTriangleRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\video_examples\ClickableVisualPoint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\cpp_required\VisualPoint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\video_examples\ClickableVisualRay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

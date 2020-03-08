@@ -157,6 +157,9 @@
     <ClCompile Include="src\demos\tessellation_shaders\2_bezier_pointnormal_triangle_tessellation.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\3_model_tessellation.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\TriangleListDebugger.cpp" />
+    <ClCompile Include="src\new_utils\cpp_required\VisualPoint.cpp" />
+    <ClCompile Include="src\video_examples\ClickableVisualPoint.cpp" />
+    <ClCompile Include="src\video_examples\ClickableVisualRay.cpp" />
     <ClCompile Include="src\video_examples\ClickableVisualVector.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\VisualVector.cpp" />
     <ClCompile Include="src\old_utils\CameraFPS.cpp" />
@@ -469,6 +472,9 @@
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
     <ClInclude Include="src\new_utils\cpp_required\TriangleListDebugger.h" />
+    <ClInclude Include="src\new_utils\cpp_required\VisualPoint.h" />
+    <ClInclude Include="src\video_examples\ClickableVisualPoint.h" />
+    <ClInclude Include="src\new_utils\header_only\ImmediateTriangleRenderer.h" />
     <ClInclude Include="src\new_utils\header_only\plane_renderer.h" />
     <ClInclude Include="src\video_examples\ClickableVisualVector.h" />
     <ClInclude Include="src\new_utils\header_only\bitmap_font\bitmap_font_base.h" />
@@ -496,6 +502,7 @@
     <ClInclude Include="src\old_utils\Utilities.h" />
     <ClInclude Include="src\video_examples\DrawVectorDemo.h" />
     <ClInclude Include="src\video_examples\InteractableDemo.h" />
+    <ClInclude Include="src\video_examples\ClickableVisualRay.h" />
     <ClInclude Include="src\video_examples\WindowManager.h" />
   </ItemGroup>
   <ItemGroup>

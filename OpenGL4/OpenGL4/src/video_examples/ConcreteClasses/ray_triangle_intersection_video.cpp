@@ -56,6 +56,9 @@
 #include "../ClickableVisualVector.h"
 #include "../../new_utils/header_only/cube_mesh_from_tris.h"
 #include "../DrawVectorDemo.h"
+#include "../../new_utils/header_only/ImmediateTriangleRenderer.h"
+#include "../ClickableVisualPoint.h"
+#include "../ClickableVisualRay.h"
 
 using nho::VisualVector;
 using nho::ClickableVisualVector;
@@ -119,19 +122,39 @@ namespace ray_tri_ns
 
 	struct Slide_HighlevelOverview : public SlideBase
 	{
+		virtual void init() override;
+		virtual void inputPoll(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
 
+	private:
+		sp<ho::ImmediateTriangle> triRender = nullptr;
+		sp<nho::ClickableVisualPoint> pntA = nullptr;
+		sp<nho::ClickableVisualPoint> pntB = nullptr;
+		sp<nho::ClickableVisualPoint> pntC = nullptr;
 	};
+
 	struct Slide_VectorReview : public SlideBase
 	{
 
 	};
 	struct Slide_RayReview : public SlideBase
 	{
-
+		virtual void init() override;
+		virtual void inputPoll(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
+	private:
+		sp<nho::ClickableVisualRay> ray;
 	};
+
 	struct Slide_ViewVsRay : public SlideBase
 	{
-
+		
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -247,11 +270,11 @@ namespace ray_tri_ns
 		font = new_sp<ho::Montserrat_BMF>("./assets/textures/font/Montserrat_ss_alpha_1024x1024_wb.png");
 		TestText3D = new_sp<ho::TextBlockSceneNode>(font, "Testing 3 2 1.");
 
-		//visualVectors.emplace_back();
-		//visualVectors[0].setVector(glm::vec3(1.f) * 3.f);
+		slides.push_back(new_sp<Slide_RayReview>());
 
-		slides.push_back(new_sp<Slide_CrossProductReview>());
+		slides.push_back(new_sp<Slide_HighlevelOverview>());
 		slides.push_back(new_sp<Slide_DotProductReview>());
+		slides.push_back(new_sp<Slide_CrossProductReview>());
 
 		//debug testing
 		//slides.push_back(new_sp<Slide_TestParentChild>());
@@ -315,16 +338,32 @@ namespace ray_tri_ns
 		/////////////////////////////////////////////////////////////////////////////////////
 		// Overall demo ui
 		/////////////////////////////////////////////////////////////////////////////////////
-		//{
-		//	static float testFloat = 0.f;
-		//	ImGui::SetNextWindowPos({ 0,0 });
-		//	ImGuiWindowFlags flags = 0;
-		//	ImGui::Begin("OpenGL Tweaker (imgui library)", nullptr, flags);
-		//	{
-		//		//ImGui::SliderFloat("center CP offset divisor", &testFloat, 0.0f, 1.0f);
-		//	}
-		//	ImGui::End();
-		//}
+		{
+			static bool bFirstDraw = true;
+			if (bFirstDraw)
+			{
+				bFirstDraw = false;
+				ImGui::SetNextWindowPos(ImVec2{ 0, (frameRenderData.fbHeight * 0.9f) });
+			}
+
+			ImGuiWindowFlags flags = 0;
+			ImGui::Begin("Slides", nullptr, flags);
+			{
+
+				if (ImGui::Button("Previous"))
+				{
+					--slideIdx;
+					slideIdx = glm::clamp<size_t>(slideIdx, 0, slides.size() -1);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Next"))
+				{
+					++slideIdx;
+					slideIdx = glm::clamp<size_t>(slideIdx, 0, slides.size() -1);
+				}
+			}
+			ImGui::End();
+		}
 
 		if (slideIdx < slides.size())
 		{
@@ -336,6 +375,124 @@ namespace ray_tri_ns
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// High level overview
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	void Slide_HighlevelOverview::init()
+	{
+		SlideBase::init();
+
+		triRender = new_sp<ho::ImmediateTriangle>();
+		pntA = new_sp<nho::ClickableVisualPoint>();
+		pntB = new_sp<nho::ClickableVisualPoint>();
+		pntC = new_sp<nho::ClickableVisualPoint>();
+
+		pntA->setPosition(glm::vec3(0, 0, 0));
+		pntB->setPosition(glm::vec3(1, 1, 0));
+		pntC->setPosition(glm::vec3(0, 1, 0));
+
+	}
+
+	void Slide_HighlevelOverview::inputPoll(float dt_sec)
+	{
+		SlideBase::inputPoll(dt_sec);
+	}
+
+	void Slide_HighlevelOverview::tick(float dt_sec)
+	{
+		SlideBase::tick(dt_sec);
+	}
+
+	void Slide_HighlevelOverview::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+
+		triRender->renderTriangle(pntA->getPosition(), pntB->getPosition(), pntC->getPosition(), glm::vec3(251/255.f, 105/255.f, 185/255.f), rd->projection_view);
+		
+		std::optional<glm::vec3> camPos;
+		if (rd->camera)
+		{
+			camPos = rd->camera->getPosition();
+		}
+
+		pntA->render(rd->projection_view, camPos);
+		pntB->render(rd->projection_view, camPos);
+		pntC->render(rd->projection_view, camPos);
+	}
+
+	void Slide_HighlevelOverview::render_UI(float dt_sec)
+	{
+		SlideBase::render_UI(dt_sec);
+
+	}
+
+	void Slide_HighlevelOverview::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		SlideBase::gatherInteractableCubeObjects(objectList);
+
+		objectList.push_back(&pntA->pointCollision->getTriangleList());
+		objectList.push_back(&pntB->pointCollision->getTriangleList());
+		objectList.push_back(&pntC->pointCollision->getTriangleList());
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Ray Review
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	void Slide_RayReview::init()
+	{
+		SlideBase::init();
+
+		ray = new_sp<nho::ClickableVisualRay>();
+		ray->setStartPnt(glm::vec3(0, 0, -3));
+		ray->setDirVec(glm::normalize(glm::vec3(1, 1, 0)));
+	}
+
+	void Slide_RayReview::inputPoll(float dt_sec)
+	{
+		SlideBase::inputPoll(dt_sec);
+	}
+
+	void Slide_RayReview::tick(float dt_sec)
+	{
+		SlideBase::tick(dt_sec);
+
+		ray->tick(dt_sec);
+	}
+
+	void Slide_RayReview::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+
+		if (rd->camera)
+		{
+			ray->render(rd->projection_view, rd->camera->getPosition());
+		}
+	}
+
+	void Slide_RayReview::render_UI(float dt_sec)
+	{
+		SlideBase::render_UI(dt_sec);
+
+		ImGui::SetNextWindowPos({ 700, 0 });
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Ray Review", nullptr, flags);
+		{
+			float tProxy = ray->getT();
+			if (ImGui::SliderFloat("t", &tProxy, 0.1f, 10.f))
+			{
+				ray->setT(tProxy);
+			}
+		}
+		ImGui::End();
+
+	}
+
+	void Slide_RayReview::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		SlideBase::gatherInteractableCubeObjects(objectList);
+		ray->getCollision(objectList);
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Dot product review

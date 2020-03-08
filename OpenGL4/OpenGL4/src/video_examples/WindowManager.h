@@ -34,6 +34,8 @@ public:
 		glm::mat4 view{ 1.f };
 		glm::mat4 projection{ 1.f };
 		glm::mat4 projection_view{ 1.f };
+		float fbHeight = 1.f;
+		float fbWidth = 1.f;
 	};
 	static FrameRenderData frameRenderData;
 public:
