@@ -14,6 +14,7 @@
 class QuaternionCamera final : public ICamera
 {
 public:
+	enum class LookMode { Free, Orbit };
 	QuaternionCamera()
 	{	
 		updateBasisVectors();
@@ -32,9 +33,15 @@ public:
 	{
 		//in real applications one should hook into the associated events with callbacks rather than polling every frame
 
+		bool bCTRL = glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+		bool bALT = glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
+		bool bSHIFT = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+
 		////////////////////////////////////////////////////////
 		// check mouse movement
 		////////////////////////////////////////////////////////
+		if (bEnableOrbitModeSwitch) { lookMode = bALT ? LookMode::Orbit : LookMode::Free; }
+
 		int windowHeight, windowWidth;
 		double x, y;
 		glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
@@ -65,9 +72,6 @@ public:
 		}
 		else { bJustPressedCursorMode = false; }
 
-		bool bCTRL = glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
-		bool bALT = glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
-		bool bSHIFT = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
 
 		////////////////////////////////////////////////////////
 		// handle movement
@@ -127,6 +131,12 @@ public:
 	{
 		if (!bCursorMode)
 		{
+			glm::vec3 orbitPoint{ 0.f };
+			if(lookMode == LookMode::Orbit)
+			{ 
+				orbitPoint = (orbitDistance * getFront()) + getPosition();
+			}
+
 			glm::vec3 uvPlaneVec = u_axis * deltaMouse.x;
 			uvPlaneVec += v_axis * -deltaMouse.y;
 
@@ -139,8 +149,12 @@ public:
 			assert(!anyValueNAN(deltaQuat));
 
 			rotation = deltaQuat * rotation;
-
 			updateBasisVectors();
+
+			if(lookMode == LookMode::Orbit) 
+			{ 
+				pos = orbitPoint + (orbitDistance * -getFront());
+			}
 		}
 	}
 
@@ -178,5 +192,8 @@ private:
 	glm::vec3 v_axis{ 0.f,1.f,0.f };
 	glm::vec3 w_axis{ 0.f,0.f,1.f }; 
 	float mouseSensitivity = 0.125f;
+	float orbitDistance = 5.f;
 	bool bCursorMode = true;
+	bool bEnableOrbitModeSwitch = true;
+	LookMode lookMode = LookMode::Free;
 };

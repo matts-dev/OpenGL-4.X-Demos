@@ -152,16 +152,32 @@ namespace ray_tri_ns
 		sp<ho::TextBlockSceneNode> dotProductValue;
 	private://state
 		bool bNormalizeVectors = false;
-		//const VectorCollisionTriangleList* activeClickTarget = nullptr;
-		//sp<nho::TriangleListDebugger> debugRenderer = nullptr;
-		//bool bRightCiickPressed = false;
-		//std::optional<Ray> previousRayCast;
 	};
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// cross product review
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	struct Slide_CrossProductReview : public SlideBase
 	{
-
+	public:
+		virtual void init() override;
+		virtual void inputPoll(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
+	private://visuals
+		sp<ClickableVisualVector> aVec;
+		sp<ClickableVisualVector> bVec;
+		sp<ClickableVisualVector> crossVecVisual;
+		sp<ho::TextBlockSceneNode> crossProductText;
+	private://state
+		bool bNormalizeVectors = false;
 	};
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Plane Review
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	struct Slide_PlaneEquation : public SlideBase
 	{
 
@@ -234,6 +250,7 @@ namespace ray_tri_ns
 		//visualVectors.emplace_back();
 		//visualVectors[0].setVector(glm::vec3(1.f) * 3.f);
 
+		slides.push_back(new_sp<Slide_CrossProductReview>());
 		slides.push_back(new_sp<Slide_DotProductReview>());
 
 		//debug testing
@@ -377,6 +394,11 @@ namespace ray_tri_ns
 			aVec->getStart()
 			+ aVec->getVec() + 0.5f * glm::normalize(aVec->getVec())
 			+ glm::vec3(0.f, 1.f, 0.f) * 0.5f);
+
+		if (QuaternionCamera* qCam = dynamic_cast<QuaternionCamera*>(rd->camera))
+		{
+			dotProductValue->setLocalRotation(qCam->rotation);
+		}
 		dotProductValue->render(rd->projection, rd->view);
 
 	}
@@ -393,6 +415,99 @@ namespace ray_tri_ns
 	}
 
 	void Slide_DotProductReview::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		SlideBase::gatherInteractableCubeObjects(objectList);
+
+		objectList.push_back(&aVec->startCollision->getTriangleList());
+		objectList.push_back(&aVec->endCollision->getTriangleList());
+		objectList.push_back(&bVec->startCollision->getTriangleList());
+		objectList.push_back(&bVec->endCollision->getTriangleList());
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// cross product review
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	void Slide_CrossProductReview::init()
+	{
+		SlideBase::init();
+
+		aVec = new_sp<ClickableVisualVector>();
+		bVec = new_sp<ClickableVisualVector>();
+		crossVecVisual = new_sp<ClickableVisualVector>();
+
+		aVec->setVector(glm::vec3(1, 0.f, 0));
+		bVec->setVector(glm::vec3(0, 1, 0));
+		crossVecVisual->setVector(glm::cross(aVec->getVec(), bVec->getVec()));
+		crossVecVisual->color = glm::vec3(0, 0, 1);
+
+		crossProductText = new_sp<ho::TextBlockSceneNode>(RayTriDemo::font, "0.f");
+	}
+
+	void Slide_CrossProductReview::inputPoll(float dt_sec)
+	{
+		SlideBase::inputPoll(dt_sec);
+	}
+
+	void Slide_CrossProductReview::tick(float dt_sec)
+	{
+		SlideBase::tick(dt_sec);
+
+		using namespace glm;
+
+		//just ignore any color setting by selection so that it is always red x green = blue
+		aVec->color = glm::vec3(1, 0, 0);
+		bVec->color = glm::vec3(0, 1, 0);
+		if (bNormalizeVectors)
+		{
+			aVec->setVector(glm::normalize(aVec->getVec()));
+			bVec->setVector(glm::normalize(bVec->getVec()));
+		}
+	}
+
+	void Slide_CrossProductReview::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+
+		glm::vec3 camPos = rd->camera->getPosition();
+
+		aVec->render(rd->projection_view, camPos);
+		bVec->render(rd->projection_view, camPos);
+
+		glm::vec3 crossVec = glm::cross(aVec->getVec(), bVec->getVec());
+		crossVecVisual->setVector(crossVec);
+		float crossLength = glm::length(crossVec);
+
+		char textBuffer[128];
+		snprintf(textBuffer, sizeof(textBuffer), "length %3.3f", crossLength);
+		crossProductText->wrappedText->text = std::string(textBuffer);
+
+		crossProductText->setLocalScale(glm::vec3(10.f));
+		crossProductText->setLocalPosition(
+			crossVecVisual->getStart()
+			+ crossVecVisual->getVec() + 0.5f * glm::normalize(crossVecVisual->getVec())
+		);
+		if (QuaternionCamera* qCam = dynamic_cast<QuaternionCamera*>(rd->camera))
+		{
+			crossProductText->setLocalRotation(qCam->rotation);
+		}
+
+		crossProductText->render(rd->projection, rd->view);
+
+		crossVecVisual->render(rd->projection_view, camPos);
+	}
+
+	void Slide_CrossProductReview::render_UI(float dt_sec)
+	{
+		SlideBase::render_UI(dt_sec);
+
+		ImGui::SetNextWindowPos({ 700, 0 });
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Cross Product Review", nullptr, flags);
+		ImGui::Checkbox("force normalization", &bNormalizeVectors);
+		ImGui::End();
+	}
+
+	void Slide_CrossProductReview::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
 	{
 		SlideBase::gatherInteractableCubeObjects(objectList);
 

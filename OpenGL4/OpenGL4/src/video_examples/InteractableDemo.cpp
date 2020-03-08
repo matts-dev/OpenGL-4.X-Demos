@@ -243,7 +243,7 @@ void InteractableDemo::inputPoll(float dt_sec)
 
 
 		if (glfwGetKey(rd->window, GLFW_KEY_O) == GLFW_PRESS)
-		{
+		{ 
 			lineCreationDistFromCamera += dt_sec * lineCreationDistAdjustSpeedSec * (bSHIFT?0.1f:1.f) * (bCTRL?10.f:1.f);
 		}
 		else if (glfwGetKey(rd->window, GLFW_KEY_I) == GLFW_PRESS)
