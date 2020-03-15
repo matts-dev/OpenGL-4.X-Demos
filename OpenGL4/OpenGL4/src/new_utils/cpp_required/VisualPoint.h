@@ -32,7 +32,10 @@ namespace nho
 	public:
 		void render(const glm::mat4& projection_view, std::optional<glm::vec3> cameraPos) const;
 		void setPosition(glm::vec3 newStart);
+		void setUserScale(glm::vec3 newScale);
 
+		/** Additional scaling is applied, user scale is only a portion of that scaling.*/
+		glm::vec3 getUserScale() { return pod.scale; }
 		glm::vec3 getPosition() { return pod.position; }
 	private:
 		void updateCache();
@@ -41,11 +44,11 @@ namespace nho
 		struct POD
 		{
 			glm::vec3 position{ 0.f };
+			glm::vec3 scale{ 1.f };
 			glm::mat4 cachedXform{ 1.f };
 		};
 	private:
-		POD pod
-			;
+		POD pod;
 		virtual void onValuesUpdated(const struct POD& values) {};
 	private:
 		static int numInstances;

@@ -58,9 +58,9 @@ if(anyValueNAN(value))\
 		float cosTheta = glm::clamp(glm::dot(from_n, to_n), -1.f, 1.f);
 
 		bool bVectorsAre180 = MathUtils::floatEquals(cosTheta, -1.0f);
-		bool bVectorsAreSame = MathUtils::floatEquals(cosTheta, 1.0f) && !bVectorsAre180; //#TODO, don't want to change this mid-refactor; but second check seems unecessary and impossible
-
-		if (!bVectorsAreSame)
+		bool bVectorsAreSame = MathUtils::floatEquals(cosTheta, 1.0f);
+		
+		if (!bVectorsAreSame && !bVectorsAre180)
 		{
 			glm::vec3 rotAxis = glm::normalize(glm::cross(from_n, to_n)); //theoretically, I don't think I need to normalize if both normal; but generally I normalize the result of xproduct
 			float rotDegreesRadians = glm::acos(cosTheta);

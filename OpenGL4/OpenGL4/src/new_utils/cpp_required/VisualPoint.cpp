@@ -168,10 +168,17 @@ namespace nho
 		updateCache();
 	}
 
+	void VisualPoint::setUserScale(glm::vec3 newScale)
+	{
+		pod.scale = newScale;
+		updateCache();
+	}
+
 	void VisualPoint::updateCache()
 	{
 		pod.cachedXform = glm::translate(glm::mat4(1.f), pod.position);
-		pod.cachedXform = glm::scale(pod.cachedXform, glm::vec3(0.025f));
+		pod.cachedXform = glm::scale(pod.cachedXform, glm::vec3(0.025f)); //always scale down to give intuitive feel for scale 1.0f
+		pod.cachedXform = glm::scale(pod.cachedXform, pod.scale);
 		onValuesUpdated(pod);
 	}
 

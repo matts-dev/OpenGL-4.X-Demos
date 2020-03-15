@@ -19,6 +19,8 @@ namespace nho
 		void setStartPnt(const glm::vec3& newStart);
 		void setDirVec(const glm::vec3& newDir);
 
+		glm::vec3 getStartPnt(){return start->getPosition();};
+		glm::vec3 getDirVec() { return dir->getVec(); };
 
 		float getT() const { return t; }
 		void setT(float val);

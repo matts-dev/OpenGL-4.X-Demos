@@ -23,7 +23,7 @@ namespace nho
 
 	void ClickableVisualRay::setDirVec(const glm::vec3& newDir)
 	{
-		dir->setVector(newDir);
+		dir->setVector(newDir * t);
 	}
 
 	void ClickableVisualRay::setT(float val)

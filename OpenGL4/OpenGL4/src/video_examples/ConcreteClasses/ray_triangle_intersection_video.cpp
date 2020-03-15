@@ -128,12 +128,39 @@ namespace ray_tri_ns
 		virtual void render_game(float dt_sec) override;
 		virtual void render_UI(float dt_sec) override;
 		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
+		void updateRay();
+	private:
+		bool bRenderTriangleArea = true;
+		bool bTriWireFrame = false;
+		bool bRenderRay = true;
+		bool bRenderEdgeA = false;
+		bool bRenderEdgeB = false;
+		bool bRenderTriangleNormals = false;
+		bool bNormalizeTriXproduct = true;
+		bool bRenderThreeNormals = false;
+		bool bRenderPlanePnt = false;
+		bool bRenderTriPlane = false;
+		bool bTransparentPlane = false;
 
+		bool bTestAPoint = false;
+		bool bTestBPoint = false;
+		bool bTestCPoint = false;
+		bool binsideTest_RenderTriEdge = false;
+		bool binsideTest_PntXproduct = false;
+		bool bInsideTest_DotResult = false;
+	
 	private:
 		sp<ho::ImmediateTriangle> triRender = nullptr;
 		sp<nho::ClickableVisualPoint> pntA = nullptr;
 		sp<nho::ClickableVisualPoint> pntB = nullptr;
 		sp<nho::ClickableVisualPoint> pntC = nullptr;
+		sp<nho::VisualVector> vectorRenderer = nullptr;
+		sp<nho::VisualPoint> pointRenderer = nullptr;
+		sp<ho::PlaneRenderer> planeRenderer = nullptr;
+		sp<ho::TextBlockSceneNode> textRenderer = nullptr;
+		sp<nho::ClickableVisualRay> ray;
+		float yawRad = 0.f, pitchRad = 0.f;
+		float targetRayT = 6.f;
 	};
 
 	struct Slide_VectorReview : public SlideBase
@@ -196,6 +223,8 @@ namespace ray_tri_ns
 		sp<ho::TextBlockSceneNode> crossProductText;
 	private://state
 		bool bNormalizeVectors = false;
+		bool bShowCrossProduct = false;
+		bool bShowLength = false;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -252,8 +281,8 @@ namespace ray_tri_ns
 	WindowManager::WindowParameters RayTriDemo::defineWindow()
 	{
 		WindowManager::WindowParameters params;
-		params.windowResolution.x = 1000;
-		params.windowResolution.y = 600;
+		params.windowResolution.x = 1400;
+		params.windowResolution.y = 900;
 
 		return params;
 	}
@@ -270,9 +299,9 @@ namespace ray_tri_ns
 		font = new_sp<ho::Montserrat_BMF>("./assets/textures/font/Montserrat_ss_alpha_1024x1024_wb.png");
 		TestText3D = new_sp<ho::TextBlockSceneNode>(font, "Testing 3 2 1.");
 
-		slides.push_back(new_sp<Slide_RayReview>());
 
 		slides.push_back(new_sp<Slide_HighlevelOverview>());
+		slides.push_back(new_sp<Slide_RayReview>());
 		slides.push_back(new_sp<Slide_DotProductReview>());
 		slides.push_back(new_sp<Slide_CrossProductReview>());
 
@@ -387,11 +416,27 @@ namespace ray_tri_ns
 		pntA = new_sp<nho::ClickableVisualPoint>();
 		pntB = new_sp<nho::ClickableVisualPoint>();
 		pntC = new_sp<nho::ClickableVisualPoint>();
+		ray = new_sp<nho::ClickableVisualRay>();
 
-		pntA->setPosition(glm::vec3(0, 0, 0));
-		pntB->setPosition(glm::vec3(1, 1, 0));
-		pntC->setPosition(glm::vec3(0, 1, 0));
+		pntA->setPosition(glm::vec3(-2, -2, -2));
+		pntB->setPosition(glm::vec3(2, -2, -2));
+		pntC->setPosition(glm::vec3(0, 2, -2));
 
+		pntA->setUserScale(glm::vec3(3.0f));
+		pntB->setUserScale(glm::vec3(3.0f));
+		pntC->setUserScale(glm::vec3(3.0f));
+
+		ray->setStartPnt(glm::vec3(1.f, 0, 0.5f));
+		yawRad = glm::radians(33.f);
+		pitchRad = glm::radians(0.f);
+
+		vectorRenderer = new_sp<VisualVector>();
+		pointRenderer = new_sp<nho::VisualPoint>();
+		planeRenderer = new_sp<ho::PlaneRenderer>();
+
+		textRenderer = new_sp<ho::TextBlockSceneNode>(RayTriDemo::font, "text.");
+		
+		updateRay();
 	}
 
 	void Slide_HighlevelOverview::inputPoll(float dt_sec)
@@ -402,28 +447,242 @@ namespace ray_tri_ns
 	void Slide_HighlevelOverview::tick(float dt_sec)
 	{
 		SlideBase::tick(dt_sec);
+
+		Ray mathRay;
+		mathRay.dir = ray->getDirVec();
+		mathRay.T = targetRayT;
+		mathRay.start = ray->getStartPnt();
+
+		Triangle tri;
+		tri.pntA = pntA->getPosition();
+		tri.pntB = pntB->getPosition();
+		tri.pntC = pntC->getPosition();
+
+		glm::vec3 intersectPnt{ 0.f };
+		float adjustedT = std::numeric_limits<float>::infinity();
+		RayTests::triangleIntersect(mathRay, tri, intersectPnt, adjustedT);
+
+		adjustedT = glm::clamp<float>(adjustedT, 0.01f, targetRayT);
+
+		ray->setT(adjustedT);
+
 	}
 
 	void Slide_HighlevelOverview::render_game(float dt_sec)
 	{
 		SlideBase::render_game(dt_sec);
 
-		triRender->renderTriangle(pntA->getPosition(), pntB->getPosition(), pntC->getPosition(), glm::vec3(251/255.f, 105/255.f, 185/255.f), rd->projection_view);
-		
 		std::optional<glm::vec3> camPos;
 		if (rd->camera)
 		{
 			camPos = rd->camera->getPosition();
 		}
 
+		if (bRenderTriangleArea)
+		{
+			if (bTriWireFrame) { ec(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)); }
+			triRender->renderTriangle(pntA->getPosition(), pntB->getPosition(), pntC->getPosition(), glm::vec3(0x38/255.f, 0x02/255.f, 0x82/255.f), rd->projection_view);
+			if (bTriWireFrame) { ec(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)); }
+		}
+
+		if (bRenderRay)
+		{
+			ray->render(rd->projection_view, camPos);
+		}
+
 		pntA->render(rd->projection_view, camPos);
 		pntB->render(rd->projection_view, camPos);
 		pntC->render(rd->projection_view, camPos);
+
+		const glm::vec3& pA = pntA->getPosition();
+		const glm::vec3& pB = pntB->getPosition();
+		const glm::vec3& pC = pntC->getPosition();
+
+		glm::vec3 toB = pB - pA;
+		glm::vec3 toC = pC - pA;
+		glm::vec3 triNormal = glm::cross(toB, toC);
+		glm::vec3 triNormal_n = glm::normalize(triNormal);
+		if (bNormalizeTriXproduct)
+		{
+			triNormal = triNormal_n;
+		}
+
+		if (bRenderEdgeA)
+		{
+			vectorRenderer->setStart(pA);
+			vectorRenderer->setVector(toB);
+			vectorRenderer->color = glm::vec3(1, 0, 0);
+			vectorRenderer->render(rd->projection_view, camPos);
+		}
+		if (bRenderEdgeB)
+		{
+			vectorRenderer->setStart(pA);
+			vectorRenderer->color = glm::vec3(0, 1, 0);
+			vectorRenderer->setVector(toC);
+			vectorRenderer->render(rd->projection_view, camPos);
+		}
+
+		if (bRenderTriangleNormals)
+		{
+			vectorRenderer->color = glm::vec3(0, 0, 1);
+			vectorRenderer->setVector(triNormal);
+			vectorRenderer->setStart(pA);
+			vectorRenderer->render(rd->projection_view, camPos);
+			
+			if (bRenderThreeNormals)
+			{
+				vectorRenderer->setStart(pB);
+				vectorRenderer->render(rd->projection_view, camPos);
+				vectorRenderer->setStart(pC);
+				vectorRenderer->render(rd->projection_view, camPos);
+			}
+		}
+
+		if (bRenderTriPlane)
+		{
+			glm::vec3 planePnt = 0.33f*pA + 0.33f*pB + 0.33f*pC;
+			planeRenderer->bScreenDoorEffect = bTransparentPlane;
+			planeRenderer->renderPlane(planePnt + (-0.05f * triNormal_n), triNormal_n, glm::vec3(10.f), glm::vec4(0.5f, 0.f, 0.f, 1.f), rd->projection_view);
+		}
+
+		Ray rayData;
+		rayData.start = ray->getStartPnt();
+		rayData.dir = ray->getDirVec();
+		rayData.T = std::numeric_limits<float>::infinity();
+
+		if (std::optional<glm::vec3> planePnt = RayTests::rayPlaneIntersection(rayData, triNormal_n, pA))
+		{
+			if (bRenderPlanePnt)
+			{
+				pointRenderer->setPosition(*planePnt);
+				pointRenderer->color = glm::vec3(0.5f, 0.5f, 0.5f);
+				pointRenderer->setUserScale(glm::vec3(2.0f));
+				pointRenderer->render(rd->projection_view, camPos);
+
+				pointRenderer->setUserScale(glm::vec3(1.0f));
+			}
+
+			auto renderPtrTest = [&](const glm::vec3& triPnt, const glm::vec3& triEdge, const glm::vec3& color)
+			{
+				glm::vec3 triangleToPlanePoint = *planePnt - triPnt;
+				vectorRenderer->color = color;
+				vectorRenderer->setStart(triPnt);
+				vectorRenderer->setVector(triangleToPlanePoint);
+
+				vectorRenderer->render(rd->projection_view, camPos);
+
+				if (binsideTest_RenderTriEdge)
+				{
+					vectorRenderer->color = glm::vec3(0, 1, 0);
+					vectorRenderer->setStart(triPnt);
+					vectorRenderer->setVector(triEdge);
+					vectorRenderer->render(rd->projection_view, camPos);
+				}
+				glm::vec3 xProduct = glm::cross(triEdge, triangleToPlanePoint);
+				if (bNormalizeTriXproduct) //note: this is shared with normals so becareful before refactoring, perhaps best to split if change
+				{
+					xProduct = glm::normalize(xProduct);
+				}
+				if (binsideTest_PntXproduct)
+				{
+
+					vectorRenderer->color = glm::vec3(0,0.5f,1.f);
+					vectorRenderer->setStart(triPnt + triNormal_n * 0.05f); //add a little of normal so vector can be seen
+					vectorRenderer->setVector(xProduct);
+					vectorRenderer->render(rd->projection_view, camPos);
+				}
+				if (bInsideTest_DotResult)
+				{
+					float comparisonTest = glm::dot(xProduct, triNormal_n);
+					textRenderer->wrappedText->text = comparisonTest >= 0.f ? "+" : "-";
+					textRenderer->setLocalPosition(triPnt + xProduct + 0.5f*glm::normalize(xProduct));
+					textRenderer->setLocalScale(glm::vec3(10.f));
+					if (QuaternionCamera* qCam = dynamic_cast<QuaternionCamera*>(rd->camera))
+					{
+						textRenderer->setLocalRotation(qCam->rotation);
+					}
+					textRenderer->render(rd->projection, rd->view);
+				}
+			};
+
+			glm::vec3 color = glm::vec3(0xff / 255.f, 0xff / 255.f, 0x14 / 255.f);
+			if (bTestAPoint)
+			{
+				renderPtrTest(pA, pB - pA, color);
+			}
+			if (bTestBPoint)
+			{
+				renderPtrTest(pB, pC - pB, color);
+			}
+			if (bTestCPoint)
+			{
+				renderPtrTest(pC, pA - pC, color);
+			}
+		}
+
+
 	}
 
 	void Slide_HighlevelOverview::render_UI(float dt_sec)
 	{
 		SlideBase::render_UI(dt_sec);
+
+		static bool bFirstWindow = true;
+		if (bFirstWindow)
+		{
+			bFirstWindow = !bFirstWindow;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Overview", nullptr, flags);
+		{
+			float tProxy = ray->getT();
+			ImGui::Text("t: %3.3f", tProxy);
+			//if (ImGui::SliderFloat("t", &tProxy, 0.1f, 10.f))
+			//{
+			//	ray->setT(tProxy);
+			//}
+
+			if (ImGui::SliderAngle("ray yaw", &yawRad, -90.f, 90.f))
+			{
+				updateRay();
+			}
+			if (ImGui::SliderAngle("ray pitch", &pitchRad, -90.f, 90.f))
+			{
+				updateRay();
+			}
+			ImGui::Checkbox("Triangle Area", &bRenderTriangleArea);
+			ImGui::SameLine();
+			ImGui::Checkbox("WireFrame", &bTriWireFrame);
+			ImGui::SameLine();
+			ImGui::Checkbox("Ray", &bRenderRay);
+
+
+			ImGui::Checkbox("Triangle Edge A", &bRenderEdgeA);
+			ImGui::Checkbox("Triangle Edge B", &bRenderEdgeB);
+
+			ImGui::Checkbox("Triangle Normals", &bRenderTriangleNormals);
+			ImGui::SameLine();
+			ImGui::Checkbox("normalize", &bNormalizeTriXproduct);
+			ImGui::SameLine();
+			ImGui::Checkbox("3Normals", &bRenderThreeNormals);
+
+			ImGui::Checkbox("tri plane", &bRenderTriPlane);
+			ImGui::SameLine();
+			ImGui::Checkbox("transparent", &bTransparentPlane);
+
+			ImGui::Checkbox("ray-plane point", &bRenderPlanePnt);
+
+			ImGui::Checkbox("test A", &bTestAPoint);
+			ImGui::SameLine(); ImGui::Checkbox("test B", &bTestBPoint);
+			ImGui::SameLine(); ImGui::Checkbox("test C", &bTestCPoint);
+
+			ImGui::Checkbox("inside: tri edge", &binsideTest_RenderTriEdge);
+			ImGui::Checkbox("inside: xproduct", &binsideTest_PntXproduct);
+			ImGui::Checkbox("inside: dot reuslt", &bInsideTest_DotResult);
+				
+		}
+		ImGui::End();
 
 	}
 
@@ -434,6 +693,17 @@ namespace ray_tri_ns
 		objectList.push_back(&pntA->pointCollision->getTriangleList());
 		objectList.push_back(&pntB->pointCollision->getTriangleList());
 		objectList.push_back(&pntC->pointCollision->getTriangleList());
+	}
+
+	void Slide_HighlevelOverview::updateRay()
+	{
+		glm::vec3 newDir(0, 0, -1);
+
+		glm::quat yawQ = yawRad != 0.f ? glm::angleAxis(yawRad, glm::vec3(0, 1, 0)) : glm::quat(1, 0, 0, 0);
+		glm::quat pitchQ = pitchRad != 0.f ? glm::angleAxis(pitchRad, glm::vec3(1, 0, 0)) : glm::quat(1, 0, 0, 0);
+		newDir = normalize(yawQ * pitchQ * newDir);
+
+		ray->setDirVec(newDir);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -473,8 +743,12 @@ namespace ray_tri_ns
 	void Slide_RayReview::render_UI(float dt_sec)
 	{
 		SlideBase::render_UI(dt_sec);
-
-		ImGui::SetNextWindowPos({ 700, 0 });
+		static bool bFirstWindow = true;
+		if (bFirstWindow)
+		{
+			bFirstWindow = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
 		ImGuiWindowFlags flags = 0;
 		ImGui::Begin("Ray Review", nullptr, flags);
 		{
@@ -564,7 +838,12 @@ namespace ray_tri_ns
 	{
 		SlideBase::render_UI(dt_sec);
 
-		ImGui::SetNextWindowPos({ 700, 0 });
+		static bool bFirstDraw = true;
+		if (bFirstDraw)
+		{
+			bFirstDraw = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
 		ImGuiWindowFlags flags = 0;
 		ImGui::Begin("Dot Product Review", nullptr, flags);
 		ImGui::Checkbox("force normalization", &bNormalizeVectors);
@@ -630,37 +909,50 @@ namespace ray_tri_ns
 		aVec->render(rd->projection_view, camPos);
 		bVec->render(rd->projection_view, camPos);
 
-		glm::vec3 crossVec = glm::cross(aVec->getVec(), bVec->getVec());
-		crossVecVisual->setVector(crossVec);
-		float crossLength = glm::length(crossVec);
-
-		char textBuffer[128];
-		snprintf(textBuffer, sizeof(textBuffer), "length %3.3f", crossLength);
-		crossProductText->wrappedText->text = std::string(textBuffer);
-
-		crossProductText->setLocalScale(glm::vec3(10.f));
-		crossProductText->setLocalPosition(
-			crossVecVisual->getStart()
-			+ crossVecVisual->getVec() + 0.5f * glm::normalize(crossVecVisual->getVec())
-		);
-		if (QuaternionCamera* qCam = dynamic_cast<QuaternionCamera*>(rd->camera))
+		if (bShowCrossProduct)
 		{
-			crossProductText->setLocalRotation(qCam->rotation);
+			glm::vec3 crossVec = glm::cross(aVec->getVec(), bVec->getVec());
+			crossVecVisual->setVector(crossVec);
+			float crossLength = glm::length(crossVec);
+
+			char textBuffer[128];
+			snprintf(textBuffer, sizeof(textBuffer), "length %3.3f", crossLength);
+			crossProductText->wrappedText->text = std::string(textBuffer);
+
+			crossProductText->setLocalScale(glm::vec3(10.f));
+			crossProductText->setLocalPosition(
+				crossVecVisual->getStart()
+				+ crossVecVisual->getVec() + 0.5f * glm::normalize(crossVecVisual->getVec())
+			);
+			if (QuaternionCamera* qCam = dynamic_cast<QuaternionCamera*>(rd->camera))
+			{
+				crossProductText->setLocalRotation(qCam->rotation);
+			}
+
+			if (bShowLength)
+			{
+				crossProductText->render(rd->projection, rd->view);
+			}
+
+			crossVecVisual->render(rd->projection_view, camPos);
 		}
-
-		crossProductText->render(rd->projection, rd->view);
-
-		crossVecVisual->render(rd->projection_view, camPos);
 	}
 
 	void Slide_CrossProductReview::render_UI(float dt_sec)
 	{
 		SlideBase::render_UI(dt_sec);
 
-		ImGui::SetNextWindowPos({ 700, 0 });
+		static bool bFirstDraw = true;
+		if (bFirstDraw)
+		{
+			bFirstDraw = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
 		ImGuiWindowFlags flags = 0;
 		ImGui::Begin("Cross Product Review", nullptr, flags);
 		ImGui::Checkbox("force normalization", &bNormalizeVectors);
+		ImGui::Checkbox("show crossproduct", &bShowCrossProduct);
+		ImGui::Checkbox("show value", &bShowLength);
 		ImGui::End();
 	}
 
