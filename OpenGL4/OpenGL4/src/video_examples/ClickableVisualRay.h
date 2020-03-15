@@ -12,10 +12,6 @@ namespace nho
 
 		void render(const glm::mat4& projectin_view, std::optional<glm::vec3> cameraPos) const;
 	public:
-		//sp<nho::ClickableVisualVector> getDir() const { return dir; }
-		//sp<nho::ClickableVisualPoint> getStart() const { return start; }
-		//void setDir(const sp<nho::ClickableVisualVector>& val) { dir = val; }
-		//void setStart(const sp<nho::ClickableVisualPoint>& val) { start = val; }
 		void setStartPnt(const glm::vec3& newStart);
 		void setDirVec(const glm::vec3& newDir);
 
@@ -24,6 +20,9 @@ namespace nho
 
 		float getT() const { return t; }
 		void setT(float val);
+
+		void setUseOffsetTipMesh(bool bOffset) { dir->bUseCenteredMesh = !bOffset;}
+		bool isUsingOffsetTip() { return !dir->bUseCenteredMesh; }
 
 		void tick(float dt_sec);
 

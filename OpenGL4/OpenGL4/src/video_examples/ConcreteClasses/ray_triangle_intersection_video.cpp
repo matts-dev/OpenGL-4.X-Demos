@@ -418,6 +418,8 @@ namespace ray_tri_ns
 		pntC = new_sp<nho::ClickableVisualPoint>();
 		ray = new_sp<nho::ClickableVisualRay>();
 
+		ray->setUseOffsetTipMesh(true);
+
 		pntA->setPosition(glm::vec3(-2, -2, -2));
 		pntB->setPosition(glm::vec3(2, -2, -2));
 		pntC->setPosition(glm::vec3(0, 2, -2));
@@ -431,6 +433,7 @@ namespace ray_tri_ns
 		pitchRad = glm::radians(0.f);
 
 		vectorRenderer = new_sp<VisualVector>();
+		vectorRenderer->bUseCenteredMesh = false;
 		pointRenderer = new_sp<nho::VisualPoint>();
 		planeRenderer = new_sp<ho::PlaneRenderer>();
 

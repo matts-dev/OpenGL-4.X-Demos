@@ -40,6 +40,7 @@ namespace nho
 		void updateCache();
 	public:
 		glm::vec3 color{ 1.f };
+		bool bUseCenteredMesh = true;
 		struct POD
 		{
 			glm::vec3 startPos{ 0.f };
@@ -53,6 +54,7 @@ namespace nho
 	private:
 		static int numInstances;
 		static sp<StaticMesh::Model> tipMesh;
+		static sp<StaticMesh::Model> tipMeshOffset;
 		static sp<ho::Shader> tipShader;
 		static sp<ho::LineRenderer> lineRenderer;
 	};

@@ -65,6 +65,7 @@ namespace nho
 	public:
 		sp<SceneNode_VectorEnd> startCollision;
 		sp<SceneNode_VectorEnd> endCollision;
+		//float tipCollisionCorrectionDistance = 0.5f;
 	private:
 		bool bUpdatingFromSceneNode = false;
 	};

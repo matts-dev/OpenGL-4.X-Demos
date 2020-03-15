@@ -219,12 +219,21 @@ void InteractableDemo::inputPoll(float dt_sec)
 							{
 								glm::vec3 endPnt = *startPnt;
 
-								assert(nodePool.size() >= 2);
-								start_linePnt = nodePool[0].get();
-								end_linePnt = nodePool[1].get();
+								if (!bALT)
+								{
+									//draw vectors when not holding alt
+									assert(nodePool.size() >= 2);
+									start_linePnt = nodePool[0].get();
+									end_linePnt = nodePool[1].get();
 
-								start_linePnt->setLocalPosition(*startPnt);
-								end_linePnt->setLocalPosition(endPnt);
+									start_linePnt->setLocalPosition(*startPnt);
+									end_linePnt->setLocalPosition(endPnt);
+								}
+								else
+								{
+									assert(nodePool.size() >= 1);
+									customPoint = nodePool[0].get();
+								}
 							}
 						}
 					}
@@ -238,6 +247,7 @@ void InteractableDemo::inputPoll(float dt_sec)
 			activeClickTarget = nullptr;
 			start_linePnt = nullptr;
 			end_linePnt = nullptr;
+			customPoint = nullptr;
 			bSelectButtonPressed = false;
 		}
 
@@ -274,6 +284,10 @@ void InteractableDemo::tick(float dt_sec)
 		{
 			//create a line by dragging mouse
 			targetNode = end_linePnt;
+		}
+		else if (customPoint)
+		{
+			targetNode = customPoint;
 		}
 
 		if (targetNode)
@@ -352,6 +366,15 @@ std::optional<glm::vec3> InteractableDemo::getDrawLineEnd()
 		return end_linePnt->getLocalPosition();
 	}
 
+	return std::nullopt;
+}
+
+std::optional<glm::vec3> InteractableDemo::getDrawPoint()
+{
+	if (customPoint)
+	{
+		return customPoint->getLocalPosition();
+	}
 	return std::nullopt;
 }
 

@@ -72,6 +72,7 @@ public: //api
 public:
 	std::optional<glm::vec3> getDrawLineStart();
 	std::optional<glm::vec3> getDrawLineEnd();
+	std::optional<glm::vec3> getDrawPoint();
 protected:
 	/** override this to provide the list of objects you want to be tested when ray casting*/
 	virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) = 0;
@@ -101,4 +102,5 @@ private: //implementation details
 	std::vector<sp<ho::SceneNode>> nodePool;
 	ho::SceneNode* start_linePnt= nullptr;
 	ho::SceneNode* end_linePnt = nullptr;
+	ho::SceneNode* customPoint = nullptr;
 };

@@ -13,6 +13,7 @@ namespace nho
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/*static*/int nho::VisualVector::numInstances = 0;
 	/*static*/sp<StaticMesh::Model> VisualVector::tipMesh = nullptr;
+	/*static*/sp<StaticMesh::Model> VisualVector::tipMeshOffset = nullptr;
 	/*static*/sp<ho::Shader> VisualVector::tipShader = nullptr;
 	/*static*/sp<ho::LineRenderer> VisualVector::lineRenderer = nullptr;
 
@@ -98,7 +99,8 @@ namespace nho
 				)";
 			tipShader = new_up<ho::Shader>(coneShaderInit);
 			lineRenderer = new_sp<ho::LineRenderer>();
-			tipMesh = new_sp<StaticMesh::Model>("./assets/models/cone_tip/cone_tip.obj");
+			tipMesh = new_sp<StaticMesh::Model>("./assets/models/cone_tip/cone_tip_centered.obj");
+			tipMeshOffset = new_sp<StaticMesh::Model>("./assets/models/cone_tip/cone_tip.obj");
 		}
 	}
 
@@ -167,7 +169,14 @@ void VisualVector::render(const glm::mat4& projection_view, std::optional<glm::v
 		tipShader->setUniform1i("bUseLight", false);
 	}
 
-	tipMesh->draw(tipShader->shaderProgram);
+	if (bUseCenteredMesh)
+	{
+		tipMesh->draw(tipShader->shaderProgram);
+	}
+	else
+	{
+		tipMeshOffset->draw(tipShader->shaderProgram);
+	}
 }
 
 void VisualVector::setVector(glm::vec3 newVec)
@@ -211,6 +220,7 @@ VisualVector::~VisualVector()
 		{
 			/*static*/ numInstances = 0;
 			/*static*/ tipMesh = nullptr;
+			/*static*/ tipMeshOffset = nullptr;
 			/*static*/ tipShader = nullptr;
 			/*static*/ lineRenderer = nullptr;
 		}

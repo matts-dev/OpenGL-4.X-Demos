@@ -1,4 +1,5 @@
 #include "DrawVectorDemo.h"
+#include "ClickableVisualPoint.h"
 
 using namespace nho;
 
@@ -6,11 +7,23 @@ void DrawVectorDemo::gatherInteractableCubeObjects(std::vector<const TriangleLis
 {
 	InteractableDemo::gatherInteractableCubeObjects(objectList);
 
-	for (const sp<ClickableVisualVector>& vec : customVectors)
+	if (bEnablePointDrawing && bAltWasPressed)
 	{
-		objectList.push_back(&vec->startCollision->getTriangleList());
-		objectList.push_back(&vec->endCollision->getTriangleList());
+		for (const sp<ClickableVisualPoint>& point : customPoints)
+		{
+			objectList.push_back(&point->pointCollision->getTriangleList());
+		}
 	}
+	else
+	{
+		//click vectors
+		for (const sp<ClickableVisualVector>& vec : customVectors)
+		{
+			objectList.push_back(&vec->startCollision->getTriangleList());
+			objectList.push_back(&vec->endCollision->getTriangleList());
+		}
+	}
+
 }
 
 void DrawVectorDemo::tick_drawVector(float dt_sec)
@@ -93,6 +106,32 @@ void DrawVectorDemo::tick_selectVectors(float dt_sec)
 	}
 }
 
+void DrawVectorDemo::tick_dragPoint(float dt_sec)
+{
+	std::optional<glm::vec3> pointLocation = InteractableDemo::getDrawPoint();
+
+	bool bCreatedNewPoint = bool(draggingPoint);
+	if (pointLocation)
+	{
+		if (!bCreatedNewPoint)
+		{
+			draggingPoint = new_sp<ClickableVisualPoint>();
+			draggingPoint->setPosition(*pointLocation);
+			draggingPoint->setUserScale(glm::vec3(2.f));
+			customPoints.push_back(draggingPoint);
+		}
+		else
+		{
+			draggingPoint->setPosition(*pointLocation);
+		}
+	}
+	else
+	{
+		//stop dragging point
+		draggingPoint= nullptr;
+	}
+}
+
 void DrawVectorDemo::tick(float dt_sec)
 {
 	InteractableDemo::tick(dt_sec);
@@ -100,6 +139,18 @@ void DrawVectorDemo::tick(float dt_sec)
 	//DRAW LOGIC
 	tick_drawVector(dt_sec);
 	tick_selectVectors(dt_sec);
+
+	tick_dragPoint(dt_sec);
+}
+
+void DrawVectorDemo::inputPoll(float dt_sec)
+{
+	InteractableDemo::inputPoll(dt_sec);
+	
+	if (rd->window)
+	{
+		bAltWasPressed = glfwGetKey(rd->window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(rd->window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS;
+	}
 
 }
 
@@ -116,5 +167,9 @@ void DrawVectorDemo::render_game(float dt_sec)
 	for (const sp<ClickableVisualVector>& vec : customVectors)
 	{
 		vec->render(rd->projection_view, camPos);
+	}
+	for (const sp<ClickableVisualPoint>& point : customPoints)
+	{
+		point->render(rd->projection_view, camPos);
 	}
 }
