@@ -233,6 +233,7 @@ void InteractableDemo::inputPoll(float dt_sec)
 								{
 									assert(nodePool.size() >= 1);
 									customPoint = nodePool[0].get();
+									customPoint->setLocalPosition(*startPnt);
 								}
 							}
 						}

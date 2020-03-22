@@ -159,6 +159,7 @@ namespace ho
 			ec(glBindVertexArray(0));
 		}
 		void setColor(glm::vec3 color) { this->color = color; }
+		glm::vec3 getColor() { return this->color; }
 		void setKey(char key) { this->key = key; }
 	private:
 		void _createBuffers()
@@ -281,6 +282,15 @@ namespace ho
 					glyph->setColor(newColor);
 				}
 			}
+		}
+
+		glm::vec3 getFontColor()
+		{
+			if (const sp<GlyphRenderer>& glyph = glyphTable['a'])
+			{
+				return glyph->getColor();
+			}
+			return glm::vec3(1.f);
 		}
 
 	private:

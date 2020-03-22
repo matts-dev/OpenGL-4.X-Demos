@@ -59,6 +59,7 @@
 #include "../../new_utils/header_only/ImmediateTriangleRenderer.h"
 #include "../ClickableVisualPoint.h"
 #include "../ClickableVisualRay.h"
+#include "../../new_utils/cpp_required/VisualPoint.h"
 
 using nho::VisualVector;
 using nho::ClickableVisualVector;
@@ -67,6 +68,9 @@ using nho::VectorCollisionTriangleList;
 
 namespace ray_tri_ns
 {
+
+	glm::vec3 yellow = glm::vec3(0xff / 255.f, 0xff / 255.f, 0x14 / 255.f);
+
 	//class SlideBase : public InteractableDemo
 	class SlideBase : public DrawVectorDemo
 	{
@@ -163,7 +167,7 @@ namespace ray_tri_ns
 		float targetRayT = 6.f;
 	};
 
-	struct Slide_VectorReview : public SlideBase
+	struct Slide_VectorAndPointReview : public SlideBase
 	{
 
 	};
@@ -177,11 +181,6 @@ namespace ray_tri_ns
 		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
 	private:
 		sp<nho::ClickableVisualRay> ray;
-	};
-
-	struct Slide_ViewVsRay : public SlideBase
-	{
-		
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -232,9 +231,97 @@ namespace ray_tri_ns
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	struct Slide_PlaneEquation : public SlideBase
 	{
+	protected:
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
+		virtual void init() override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+		sp<nho::ClickableVisualVector> planeNormal;
+		sp<nho::ClickableVisualPoint> testPoint;
+		sp<nho::ClickableVisualVector> vecToPoint;
+		sp<ho::PlaneRenderer> planeRenderer;
+		sp<ho::TextBlockSceneNode> text_dotProductValue;
 
+		sp<nho::VisualVector> genericVector;
+		sp<nho::VisualPoint> genericPoint;
+	private:
+		bool bRenderPlaneNormal = true;
+		bool bRenderPlanePoint = false;
+		bool bRenderTestPoint = false;
+		bool bRenderVecToPoint = false;
+		bool bRenderDotProduct = false;
 	};
-	
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Live Coding
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	struct Slide_LiveCoding : public SlideBase
+	{
+	protected:
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
+		virtual void init() override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+
+		void reviewCode_template();
+		void reviewCode_recorded();
+
+		void codeGroundTruth();
+
+		sp<ho::ImmediateTriangle> triRender = nullptr;
+		sp<nho::VisualVector> genericVector = nullptr;
+		sp<nho::VisualPoint> genericPoint = nullptr;
+	private:
+	};
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// generic base slide
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	struct Slide_AllRenderables : public SlideBase
+	{
+	public:
+		bool bRenderXYZ = false;
+	protected:
+		virtual void init() override;
+		virtual void render_game(float dt_sec) override;
+	protected:
+		sp<ho::ImmediateTriangle> genericTriangle = nullptr;
+		sp<nho::VisualVector> genericVector = nullptr;
+		sp<nho::VisualPoint> genericPoint = nullptr;
+		sp<ho::TextBlockSceneNode> genericText = nullptr;
+	};
+
+	void Slide_AllRenderables::init()
+	{
+		SlideBase::init();
+
+		genericTriangle = new_sp<ho::ImmediateTriangle>();
+		genericVector = new_sp<nho::VisualVector>();
+		genericPoint = new_sp<nho::VisualPoint>();
+		genericText = new_sp<ho::TextBlockSceneNode>(RayTriDemo::font, "0.f");
+	}
+
+	////////////////////////////////////////////////////////
+	// vector vs ray
+	////////////////////////////////////////////////////////
+	struct Slide_VectorVsRay : public Slide_AllRenderables
+	{
+	protected:
+		virtual void init() override;
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+	private:
+		bool bLerpToOrigin = true;
+		float lerpSpeedSec = 8.f;
+	};
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// tests
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,9 +388,13 @@ namespace ray_tri_ns
 
 
 		slides.push_back(new_sp<Slide_HighlevelOverview>());
+		slides.push_back(new_sp<Slide_VectorAndPointReview>());
 		slides.push_back(new_sp<Slide_RayReview>());
 		slides.push_back(new_sp<Slide_DotProductReview>());
 		slides.push_back(new_sp<Slide_CrossProductReview>());
+		slides.push_back(new_sp<Slide_PlaneEquation>());
+		slides.push_back(new_sp<Slide_VectorVsRay>());
+		slides.push_back(new_sp<Slide_LiveCoding>());
 
 		//debug testing
 		//slides.push_back(new_sp<Slide_TestParentChild>());
@@ -378,7 +469,6 @@ namespace ray_tri_ns
 			ImGuiWindowFlags flags = 0;
 			ImGui::Begin("Slides", nullptr, flags);
 			{
-
 				if (ImGui::Button("Previous"))
 				{
 					--slideIdx;
@@ -608,7 +698,7 @@ namespace ray_tri_ns
 				}
 			};
 
-			glm::vec3 color = glm::vec3(0xff / 255.f, 0xff / 255.f, 0x14 / 255.f);
+			glm::vec3 color = yellow;
 			if (bTestAPoint)
 			{
 				renderPtrTest(pA, pB - pA, color);
@@ -968,6 +1058,556 @@ namespace ray_tri_ns
 		objectList.push_back(&bVec->startCollision->getTriangleList());
 		objectList.push_back(&bVec->endCollision->getTriangleList());
 	}
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Plane review
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void Slide_PlaneEquation::init()
+	{
+		SlideBase::init();
+
+		planeNormal = new_sp<nho::ClickableVisualVector>();
+		planeNormal->color = glm::vec3(0.2f, 0.2f, 1.f);
+		planeNormal->setStart(glm::vec3(0, 0, 0));
+		planeNormal->setVector(glm::normalize(glm::vec3(1, 1, 0.2)));
+
+		testPoint = new_sp<nho::ClickableVisualPoint>();
+		testPoint->color = glm::vec3(0, 1, 0);
+		testPoint->setPosition(glm::vec3(2, 1, -1));
+		testPoint->setUserScale(glm::vec3(3));
+
+		vecToPoint = new_sp<nho::ClickableVisualVector>();
+		vecToPoint->setStart(planeNormal->getStart());
+		vecToPoint->setVector(testPoint->getPosition() - planeNormal->getStart());
+		vecToPoint->color = yellow;
+		vecToPoint->bUseCenteredMesh = false;
+
+		genericVector = new_sp<VisualVector>();
+		genericPoint = new_sp<nho::VisualPoint>();
+
+		planeRenderer = new_sp<ho::PlaneRenderer>();
+
+		text_dotProductValue = new_sp<ho::TextBlockSceneNode>(RayTriDemo::font, "0.f");
+	}
+
+	void Slide_PlaneEquation::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		objectList.push_back(&planeNormal->endCollision->getTriangleList());
+		objectList.push_back(&planeNormal->startCollision->getTriangleList());
+
+		objectList.push_back(&testPoint->pointCollision->getTriangleList());
+	}
+
+	void Slide_PlaneEquation::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+		if (rd->camera)
+		{
+			glm::vec3 camPos = rd->camera->getPosition();
+
+			planeRenderer->renderPlane(planeNormal->getStart(), planeNormal->getVec(), glm::vec3(5.f), glm::vec4(0.5f, 0, 0, 1.f), rd->projection_view);
+
+			if (bRenderPlaneNormal)
+			{
+				planeNormal->render(rd->projection_view, camPos);
+			}
+
+			if (bRenderPlanePoint)
+			{
+				genericPoint->setPosition(planeNormal->getStart());
+				genericPoint->setUserScale(glm::vec3(3.0f));
+				genericPoint->color = planeNormal->color;
+				genericPoint->render(rd->projection_view, camPos);
+			}
+
+			if (bRenderTestPoint)
+			{
+				testPoint->render(rd->projection_view, camPos);
+			}
+
+			if (bRenderVecToPoint)
+			{
+				vecToPoint->render(rd->projection_view, camPos);
+			}
+
+			if (bRenderDotProduct)
+			{
+				text_dotProductValue->setLocalPosition(
+					vecToPoint->getStart()
+					+ vecToPoint->getVec() + 0.5f * glm::normalize(vecToPoint->getVec())
+					//+ glm::vec3(0.f, 1.f, 0.f) * 0.5f
+				);
+
+				if (QuaternionCamera* qCam = dynamic_cast<QuaternionCamera*>(rd->camera))
+				{
+					text_dotProductValue->setLocalRotation(qCam->rotation);
+				}
+
+				text_dotProductValue->render(rd->projection, rd->view);
+			}
+		}
+	}
+
+	void Slide_PlaneEquation::render_UI(float dt_sec)
+	{
+		SlideBase::render_UI(dt_sec);
+
+		static bool bFirstDraw = true;
+		if (bFirstDraw)
+		{
+			bFirstDraw = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
+
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Plane Review", nullptr, flags);
+		{
+			ImGui::Checkbox("plane normal", &bRenderPlaneNormal);
+			ImGui::Checkbox("plane point", &bRenderPlanePoint);
+
+			ImGui::Checkbox("test point", &bRenderTestPoint);
+			ImGui::Checkbox("vector to test point", &bRenderVecToPoint);
+			ImGui::Checkbox("dot product", &bRenderDotProduct);
+		}
+		ImGui::End();
+
+	}
+
+
+	void Slide_PlaneEquation::tick(float dt_sec)
+	{
+		SlideBase::tick(dt_sec);
+
+		planeNormal->color = glm::vec3(0, 0, 1);
+
+		vecToPoint->setStart(planeNormal->getStart());
+		vecToPoint->setVector(testPoint->getPosition() - planeNormal->getStart());
+
+		//must come afte we've set vecToPoint for it to be latest values
+		float dotProduct = glm::dot(glm::normalize(planeNormal->getVec()), vecToPoint->getVec());
+		char textBuffer[128];
+		snprintf(textBuffer, sizeof(textBuffer), "%3.3f", dotProduct);
+		text_dotProductValue->wrappedText->text = std::string(textBuffer);
+		text_dotProductValue->setLocalScale(glm::vec3(5.f));
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// live coding
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	void Slide_LiveCoding::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		SlideBase::gatherInteractableCubeObjects(objectList);
+
+	}
+
+	void Slide_LiveCoding::init()
+	{
+		SlideBase::init();
+
+		triRender = new_sp<ho::ImmediateTriangle>();
+		genericVector = new_sp<nho::VisualVector>();
+		genericPoint = new_sp<nho::VisualPoint>();
+
+	}
+
+	void Slide_LiveCoding::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+	}
+
+	void Slide_LiveCoding::render_UI(float dt_sec)
+	{
+		SlideBase::render_UI(dt_sec);
+
+		//static bool bFirstDraw = true;
+		//if (bFirstDraw)
+		//{
+		//	bFirstDraw = false;
+		//	ImGui::SetNextWindowPos({ 1000, 0 });
+		//}
+
+		//ImGuiWindowFlags flags = 0;
+		//ImGui::Begin("Live Coding", nullptr, flags);
+		//{
+
+		//}
+		//ImGui::End();
+
+	}
+
+	void Slide_LiveCoding::tick(float dt_sec)
+	{
+		SlideBase::tick(dt_sec);
+	}
+
+	void Slide_LiveCoding::reviewCode_template()
+	{
+		using namespace glm;
+
+		////////////////////////////////////////////////////////
+		// points review
+		////////////////////////////////////////////////////////
+
+		vec3 pointA;
+		pointA.x = 1;
+		pointA.y = -2;
+		pointA.z = 3;
+
+		vec3 pointB{ -1, 2, 3 };
+
+		////////////////////////////////////////////////////////
+		// vector review
+		////////////////////////////////////////////////////////
+
+		const vec3 xDir(1, 0, 0);
+		const vec3 yDir = vec3(0, 1, 0);
+		const vec3 zDir{ 0,0,1 };
+
+		//you can create vectors/direction from points
+		vec3 A_to_B = pointA - pointB;
+
+		float LengthAB = glm::length(A_to_B);
+
+		vec3 ab_normalized = A_to_B / LengthAB;
+
+		vec3 ab_normalized_2 = glm::normalize(A_to_B);
+
+		////////////////////////////////////////////////////////
+		// dot product review
+		////////////////////////////////////////////////////////
+
+		float dotProduct = glm::dot(A_to_B, xDir);
+
+		////////////////////////////////////////////////////////
+		// cross product review
+		////////////////////////////////////////////////////////
+
+		vec3 x_cross_y = glm::cross(xDir, yDir);
+
+		////////////////////////////////////////////////////////
+		// ray review
+		////////////////////////////////////////////////////////
+		struct Ray
+		{
+			vec3 startPoint;
+			vec3 rayDirection;
+			float t;
+		};
+
+		Ray myRay;
+		myRay.startPoint = vec3(1, 3, 0);
+		myRay.rayDirection = zDir;
+		myRay.t = 5;
+
+		////////////////////////////////////////////////////////
+		// plane review
+		////////////////////////////////////////////////////////
+		struct Plane
+		{
+			vec3 aPointOnPlane;
+			vec3 normal_n;
+		};
+		Plane myPlane;
+		myPlane.aPointOnPlane = vec3(3, 3, -3);
+		myPlane.aPointOnPlane = yDir;
+
+		////////////////////////////////////////////////////////
+		// plane test
+		////////////////////////////////////////////////////////
+
+		vec3 testPoint = vec3(5, 5, 5);
+
+		vec3 planeToPoint = testPoint - myPlane.aPointOnPlane;
+
+		float planeTestVal = glm::dot(planeToPoint, myPlane.normal_n);
+		//if (planeTestVal == 0.f)
+		if(glm::abs(planeTestVal) < 0.001f)
+		{
+			//on the plane!
+		}
+
+	}
+
+
+
+	void Slide_LiveCoding::reviewCode_recorded()
+	{
+		using namespace glm;
+
+		////////////////////////////////////////////////////////
+		// point review
+		////////////////////////////////////////////////////////
+
+		vec3 pointA;
+		pointA.x = 1;
+		pointA.y = -2;
+		pointA.z = 3;
+
+		vec3 pointB{ -1,2,3.f };
+
+		////////////////////////////////////////////////////////
+		// vector review
+		////////////////////////////////////////////////////////
+
+		const vec3 xDir = vec3(1, 0, 0);
+		const vec3 yDir(0, 1, 0);
+		const vec3 zDir{ 0,0,1 };
+
+
+		vec3 A_FROM_B = pointA - pointB;
+
+		float abLength = glm::length(A_FROM_B);
+
+		vec3 abNormalized = A_FROM_B / abLength;
+
+		vec3 abNormalized2 = glm::normalize(A_FROM_B);
+
+
+		////////////////////////////////////////////////////////
+		// dot product review
+		////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		////////////////////////////////////////////////////////
+		// dot product review
+		////////////////////////////////////////////////////////
+
+		float dotProductResult = glm::dot(A_FROM_B, xDir);
+
+
+		////////////////////////////////////////////////////////
+		// cross product review
+		////////////////////////////////////////////////////////
+		
+		vec3 x_cross_y = glm::cross(xDir, yDir);
+
+
+
+		////////////////////////////////////////////////////////
+		// Ray review
+		////////////////////////////////////////////////////////
+
+		struct Ray
+		{
+			vec3 startPoint;
+			vec3 rayDirection;
+			float t;
+		};
+
+		Ray myRay;
+		myRay.startPoint = vec3(1, 3, 0);
+		myRay.rayDirection = zDir;
+		myRay.t = 5;
+
+		vec3 pointFromRay = myRay.startPoint + (myRay.rayDirection * myRay.t);
+
+
+
+		////////////////////////////////////////////////////////
+		// plane review
+		////////////////////////////////////////////////////////
+
+		struct Plane
+		{
+			vec3 pointOnPlane;
+			vec3 normal;
+		};
+
+		Plane myPlane;
+		myPlane.pointOnPlane = vec3(1, 2, 0);
+		myPlane.normal = yDir;
+
+
+		////////////////////////////////////////////////////////
+		// plane test
+		////////////////////////////////////////////////////////
+
+		vec3 testPoint = vec3(2, 2, 0);
+
+		vec3 vecToTestPoint = testPoint - myPlane.pointOnPlane;
+
+		float testResult = glm::dot(vecToTestPoint, myPlane.normal);
+
+		if(glm::abs(testResult) < 0.0001f)
+		{
+			//on the plane!
+		}
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	void Slide_LiveCoding::codeGroundTruth()
+	{
+	}
+
+	////////////////////////////////////////////////////////
+	// all renderables base
+	////////////////////////////////////////////////////////
+	void Slide_AllRenderables::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+
+		if (bRenderXYZ && rd)
+		{
+			glm::vec3 cachedColor = genericText->wrappedText->bitMapFont->getFontColor();
+			glm::quat cachedRotation = genericText->getLocalRotation();
+			glm::vec3 cachedScale = genericText->getLocalScale();
+			std::optional<glm::vec3> camPos = rd->camera ? rd->camera->getPosition() : glm::vec3(0.f);
+			std::optional<glm::quat> rotQuat = std::nullopt;
+			if (QuaternionCamera* qCam = dynamic_cast<QuaternionCamera*>(rd->camera))
+			{
+				rotQuat = qCam->rotation;
+			}
+			float textOffsetScalar = 1.3f;
+			float brightenTextScalar = 0.25f;
+			genericVector->setStart(glm::vec3(0.f));
+			genericText->setLocalScale(glm::vec3(8.f));
+			if (rotQuat) { genericText->setLocalRotation(*rotQuat); }
+
+			genericVector->color = glm::vec3(1, 0, 0);
+			genericVector->setVector(genericVector->color);
+			genericVector->render(rd->projection_view, camPos);
+			genericText->wrappedText->text = "x";
+			genericText->setLocalPosition(genericVector->getVec()*textOffsetScalar);
+			genericText->wrappedText->bitMapFont->setFontColor(genericVector->color + glm::vec3(brightenTextScalar));
+			genericText->render(rd->projection, rd->view);
+
+			genericVector->color = glm::vec3(0, 1, 0);
+			genericVector->setVector(genericVector->color);
+			genericVector->render(rd->projection_view, camPos);
+			genericText->wrappedText->text = "y";
+			genericText->setLocalPosition(genericVector->getVec()*textOffsetScalar);
+			genericText->wrappedText->bitMapFont->setFontColor(genericVector->color + glm::vec3(brightenTextScalar));
+			genericText->render(rd->projection, rd->view);
+
+			genericVector->color = glm::vec3(0, 0, 1);
+			genericVector->setVector(genericVector->color);
+			genericVector->render(rd->projection_view, camPos);
+			genericText->wrappedText->text = "z";
+			genericText->setLocalPosition(genericVector->getVec() * textOffsetScalar);
+			genericText->wrappedText->bitMapFont->setFontColor(genericVector->color + glm::vec3(brightenTextScalar));
+			genericText->render(rd->projection, rd->view);
+
+			genericText->wrappedText->bitMapFont->setFontColor(cachedColor);
+			genericText->setLocalScale(cachedScale);
+			if (rotQuat) { genericText->setLocalRotation(cachedRotation); }
+		}
+	}
+
+
+	////////////////////////////////////////////////////////
+	// vector vs ray
+	////////////////////////////////////////////////////////
+
+	void Slide_VectorVsRay::init()
+	{
+		Slide_AllRenderables::init();
+		bRenderXYZ = true;
+	}
+
+	void Slide_VectorVsRay::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		Slide_AllRenderables::gatherInteractableCubeObjects(objectList);
+	}
+
+	void Slide_VectorVsRay::render_game(float dt_sec)
+	{
+		Slide_AllRenderables::render_game(dt_sec);
+	}
+
+	void Slide_VectorVsRay::render_UI(float dt_sec)
+	{
+		Slide_AllRenderables::render_UI(dt_sec);
+
+
+		SlideBase::render_UI(dt_sec);
+		static bool bFirstWindow = true;
+		if (bFirstWindow)
+		{
+			bFirstWindow = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Vector vs Ray Review", nullptr, flags);
+		{
+			ImGui::Checkbox("Interpolate To Origin", &bLerpToOrigin);
+		}
+		ImGui::End();
+
+	}
+
+	void Slide_VectorVsRay::tick(float dt_sec)
+	{
+		using namespace glm;
+
+		Slide_AllRenderables::tick(dt_sec);
+
+		if (bLerpToOrigin)
+		{
+			for (sp<nho::ClickableVisualVector>& vec : customVectors)
+			{
+				if (vec != newVector)
+				{
+					vec3 start = vec->getStart();
+					vec3 toOri = vec3(0.f) - start;
+
+					float len = glm::length(toOri);
+
+					vec3 newStart = start;
+					if (len > 0.01f)
+					{
+						toOri = toOri / len; //normalize
+
+						float lerpSpeedThisTick = glm::min(lerpSpeedSec * dt_sec, len);
+						newStart = start + (toOri * lerpSpeedThisTick);
+					}
+					else
+					{
+						newStart = vec3(0.f);
+					}
+					vec->setStart(newStart);
+				}
+			}
+		}
+	}
+
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
