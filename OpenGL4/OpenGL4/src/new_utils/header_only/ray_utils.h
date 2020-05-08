@@ -51,8 +51,8 @@ namespace RayTests
 		// calculate ray T value when it intersects plane triangle is within
 		//		notation: @ == dot product; capital_letters == vector; S = rayStart, D = rayDirection, B = pointInPlane,
 		//		ray-plane intersection:
-		//			N @ ((S - tD) - B) = 0
-		//			N@S - N@tD - N@b = 0			//distribute dot
+		//			N @ ((S + tD) - B) = 0
+		//			N@S + N@tD - N@b = 0			//distribute dot
 		//			N@tD = -N@S + N@B
 		//			t(N@D) = -N@S + N@B				//factor out t
 		//			t = (-N@S + N@B) / (N@D)		//divide over dot-product coefficient

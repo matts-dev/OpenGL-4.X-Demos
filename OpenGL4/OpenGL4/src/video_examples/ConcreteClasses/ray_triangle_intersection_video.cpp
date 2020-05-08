@@ -269,13 +269,67 @@ namespace ray_tri_ns
 		void reviewCode_template();
 		void reviewCode_recorded();
 
-		void codeGroundTruth();
+		bool codeGroundTruth();
+		bool liveCodingIntersection();
 
 		sp<ho::ImmediateTriangle> triRender = nullptr;
 		sp<nho::VisualVector> genericVector = nullptr;
 		sp<nho::VisualPoint> genericPoint = nullptr;
 	private:
+		glm::vec3 rayStart{ -100.f };
+		glm::vec3 rayEnd{ -100.1f };
+
+	private: //live coding
+
+
+
+		//glm::vec3 triPoint_A = glm::vec3(-1, -1, -1);
+		//glm::vec3 triPoint_B = glm::vec3(1, -1, -1);
+		//glm::vec3 triPoint_C = glm::vec3(0, 1, -1);
+
+		
+
+		glm::vec3 triPoint_A = glm::vec3(-1, -1, -1); //left
+		glm::vec3 triPoint_B = glm::vec3( 1, -1, -1); //right
+		glm::vec3 triPoint_C = glm::vec3( 0,  1, -1); //top
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1208,6 +1262,7 @@ namespace ray_tri_ns
 
 		triRender = new_sp<ho::ImmediateTriangle>();
 		genericVector = new_sp<nho::VisualVector>();
+		genericVector->bUseCenteredMesh = false;
 		genericPoint = new_sp<nho::VisualPoint>();
 
 	}
@@ -1215,25 +1270,70 @@ namespace ray_tri_ns
 	void Slide_LiveCoding::render_game(float dt_sec)
 	{
 		SlideBase::render_game(dt_sec);
+
+		triRender->renderTriangle(triPoint_A, triPoint_B, triPoint_C, glm::vec3(1.f,0,0) , rd->projection_view);
+
+		if (rd->camera)
+		{
+			genericVector->setStart(rayStart);
+			genericVector->setEnd(rayEnd);
+			genericVector->render(rd->projection_view, rd->camera->getPosition());
+		}
 	}
 
 	void Slide_LiveCoding::render_UI(float dt_sec)
 	{
 		SlideBase::render_UI(dt_sec);
 
-		//static bool bFirstDraw = true;
-		//if (bFirstDraw)
-		//{
-		//	bFirstDraw = false;
-		//	ImGui::SetNextWindowPos({ 1000, 0 });
-		//}
+		static bool bFirstDraw = true;
+		if (bFirstDraw)
+		{
+			bFirstDraw = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
 
-		//ImGuiWindowFlags flags = 0;
-		//ImGui::Begin("Live Coding", nullptr, flags);
-		//{
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Live Coding", nullptr, flags);
+		{
+			if (ImGui::Button("run ray tri intersection"))
+			{
+				//bool bGroundTruthHit = codeGroundTruth();
+				//if (bGroundTruthHit)
+				//{
+				//	std::cout << "hit the triangle" << std::endl;
+				//}
+				//else
+				//{
+				//	std::cout << "missed" << std::endl;
+				//}
 
-		//}
-		//ImGui::End();
+
+
+
+
+
+
+
+
+
+				if (liveCodingIntersection())
+				{
+					std::cout << "hit the triangle" << std::endl;
+				}
+				else
+				{
+					std::cout << "missed" << std::endl;
+				}
+
+
+
+
+
+
+
+			}
+		}
+		ImGui::End();
 
 	}
 
@@ -1472,9 +1572,222 @@ namespace ray_tri_ns
 
 
 
-	void Slide_LiveCoding::codeGroundTruth()
+	bool Slide_LiveCoding::codeGroundTruth()
 	{
+		using namespace glm;
+		struct Ray
+		{
+			vec3 startPoint;
+			vec3 rayDirection;
+			float t;
+		};
+		struct Plane
+		{
+			vec3 pointOnPlane;
+			vec3 normal;
+		};
+
+		vec3 camPos = rd->camera->getPosition();
+		vec3 camDir = rd->camera->getFront();
+
+		Ray camRay;
+		camRay.startPoint = camPos;
+		camRay.rayDirection = camDir;
+		camRay.t = -1;
+
+		vec3 triEdge1 = triPoint_B - triPoint_A;
+		vec3 triEdge2 = triPoint_C - triPoint_A;
+		vec3 triFlatNormal = glm::cross(triEdge1, triEdge2);
+
+		Plane triPlane;
+		triPlane.pointOnPlane = triPoint_A;
+		triPlane.normal = triFlatNormal;
+
+		//calculate t value where ray hits plane
+		float n_dot_d = glm::dot(triPlane.normal, camRay.rayDirection);
+
+		if (glm::abs(n_dot_d) < 0.00001f)
+		{
+			//avoid divide by zero, ray must be running along the plane
+			return false;
+		}
+		float n_dot_ps = glm::dot(triPlane.normal, (triPlane.pointOnPlane - camRay.startPoint));
+		camRay.t = n_dot_ps / n_dot_d;
+
+		//generate a point from the t value we found
+		vec3 planePoint = camRay.startPoint + camRay.t * camRay.rayDirection;
+		
+		//test point a
+		vec3 AtoB_Edge = triPoint_B - triPoint_A;
+		vec3 BtoC_Edge = triPoint_C - triPoint_B;
+		vec3 CtoA_edge = triPoint_A - triPoint_C;
+
+		vec3 AtoPnt = planePoint - triPoint_A;
+		vec3 BtoPnt = planePoint - triPoint_B;
+		vec3 CtoPnt = planePoint - triPoint_C;
+
+		vec3 ATestVec = glm::cross(AtoB_Edge, AtoPnt);
+		vec3 BTestVec = glm::cross(BtoC_Edge, BtoPnt);
+		vec3 CTestVec = glm::cross(CtoA_edge, CtoPnt);
+
+		bool ATestVec_MatchesNormal = glm::dot(ATestVec, triFlatNormal) > 0.f;
+		bool BTestVec_MatchesNormal = glm::dot(BTestVec, triFlatNormal) > 0.f;
+		bool CTestVec_MatchesNormal = glm::dot(CTestVec, triFlatNormal) > 0.f;
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// don't show this part in video
+		rayStart = camRay.startPoint;
+		rayEnd = planePoint;
+		if (ATestVec_MatchesNormal && BTestVec_MatchesNormal && CTestVec_MatchesNormal)
+		{
+		}
+		else
+		{
+			rayEnd = camRay.startPoint + camRay.rayDirection * 10.f;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+		return ATestVec_MatchesNormal && BTestVec_MatchesNormal && CTestVec_MatchesNormal;
 	}
+
+
+
+
+
+
+
+
+
+	bool Slide_LiveCoding::liveCodingIntersection()
+	{
+		using namespace glm;
+		struct Ray
+		{
+			vec3 startPoint;
+			vec3 rayDirection;
+			float t;
+		};
+		struct Plane
+		{
+			vec3 pointOnPlane;
+			vec3 normal;
+		};
+
+		vec3 cameraPosition = rd->camera->getPosition();
+		vec3 cameraDirection = rd->camera->getFront();
+
+
+
+
+
+		Ray camRay;
+		camRay.startPoint = cameraPosition;
+		camRay.rayDirection = cameraDirection;
+		camRay.t = -1;
+
+		vec3 triEdge1 = triPoint_B - triPoint_A;
+		vec3 triEdge2 = triPoint_C - triPoint_A;
+		vec3 triFlatNormal = glm::cross(triEdge1, triEdge2);
+
+		Plane triPlane;
+		triPlane.normal = triFlatNormal;
+		triPlane.pointOnPlane = triPoint_A;
+
+		//calculate t value when ray hits plane
+		float n_dot_d = glm::dot(triPlane.normal, camRay.rayDirection);
+		if (glm::abs(n_dot_d) < 0.0001f)
+		{
+			return false;
+		}
+
+		float n_dot_ps = glm::dot(triPlane.normal, triPlane.pointOnPlane - camRay.startPoint);
+		camRay.t = n_dot_ps / n_dot_d;
+
+		vec3 planePoint = camRay.startPoint + camRay.t * camRay.rayDirection;
+		
+		//test if plane point is within the triangle
+		vec3 AtoB_edge = triPoint_B - triPoint_A;
+		vec3 BtoC_edge = triPoint_C - triPoint_B;
+		vec3 CtoA_edge = triPoint_A - triPoint_C;
+
+		vec3 AtoPoint = planePoint - triPoint_A;
+		vec3 BtoPoint = planePoint - triPoint_B;
+		vec3 CtoPoint = planePoint - triPoint_C;
+
+		vec3 ATestVec = glm::cross(AtoB_edge, AtoPoint);
+		vec3 BTestVec = glm::cross(BtoC_edge, BtoPoint);
+		vec3 CTestVec = glm::cross(CtoA_edge, CtoPoint);
+
+		bool ATestVec_MatchesNormal = glm::dot(ATestVec, triFlatNormal) > 0.f;
+		bool BTestVec_MatchesNormal = glm::dot(BTestVec, triFlatNormal) > 0.f;
+		bool CTestVec_MatchesNormal = glm::dot(CTestVec, triFlatNormal) > 0.f;
+
+		bool hitTriangle = ATestVec_MatchesNormal && BTestVec_MatchesNormal && CTestVec_MatchesNormal;
+		//return hitTriangle;
+
+
+
+
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// don't show this part in video, hooking up graphics!
+		rayStart = camRay.startPoint;
+		rayEnd = planePoint;
+		if (ATestVec_MatchesNormal && BTestVec_MatchesNormal && CTestVec_MatchesNormal)
+		{
+		}
+		else
+		{
+			rayEnd = camRay.startPoint + camRay.rayDirection * 10.f;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+		return hitTriangle;
+
+
+
+
+
+
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	////////////////////////////////////////////////////////
 	// all renderables base
