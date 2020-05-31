@@ -60,11 +60,13 @@
 #include "../ClickableVisualPoint.h"
 #include "../ClickableVisualRay.h"
 #include "../../new_utils/cpp_required/VisualPoint.h"
+#include "../../new_utils/cpp_required/ProjectionAnimation.h"
 
 using nho::VisualVector;
 using nho::ClickableVisualVector;
 using nho::SceneNode_VectorEnd;
 using nho::VectorCollisionTriangleList;
+using nho::VectorProjectionAnimation;
 
 namespace ray_tri_ns
 {
@@ -76,6 +78,36 @@ namespace ray_tri_ns
 	{
 
 	};
+
+	inline bool anyValueNAN(float a) { return glm::isnan(a); }
+	inline bool anyValueNAN(glm::vec3 vec) { return glm::isnan(vec.x) || glm::isnan(vec.y) || glm::isnan(vec.z); }
+	inline bool anyValueNAN(glm::vec4 vec) { return glm::isnan(vec.x) || glm::isnan(vec.y) || glm::isnan(vec.z) || glm::isnan(vec.w); };
+	inline bool anyValueNAN(glm::quat quat)
+	{
+		glm::bvec4 vec = glm::isnan(quat);
+		return vec.x || vec.y || vec.z || vec.w;
+	};
+
+	glm::vec3 projectAontoB(glm::vec3 a, glm::vec3 b)
+	{
+		using namespace glm;
+
+		//scalar projection is doting a vector onto the normalized vector of b
+		//		vec3 bUnitVec = b / ||b||;	//ie normali
+		//		scalarProj = a dot (b/||b||);	//ie dot with bUnitVec
+		// you then then need to scale up the bUnitVector to get a projection vector
+		//		vec3 projection = bUnitVector * scalarProjection
+		// this can be simplified so we never have to do a square root for normalization (this looks better when written in 
+		//		vec3 projection = bUnitVector * scalarProjection
+		//		vec3 projection = b / ||b||	  * a dot (b/||b||)
+		//		vec3 projection = b / ||b||	  * (a dot b) / ||b||		//factor around dot product
+		//		vec3 projection =     b * (a dot b) / ||b||*||b||		//multiply these two terms
+		//		vec3 projection =     b * ((a dot b) / ||b||*||b||)		//recale dot product will product scalar, lump scalars in parenthesis
+		//		vec3 projection =     ((a dot b) / ||b||*||b||) * b;	//here b is a vector, so we have scalar * vector;
+		//		vec3 projection =     ((a dot b) / (b dot b) * b;	//recall that dot(b,b) == ||b||^2 == ||b||*||b||
+		vec3 projection =  (glm::dot(a,b) / glm::dot(b, b)) * b;
+		return projection;
+	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // demo class
@@ -280,56 +312,170 @@ namespace ray_tri_ns
 		glm::vec3 rayEnd{ -100.1f };
 
 	private: //live coding
-
-
-
-		//glm::vec3 triPoint_A = glm::vec3(-1, -1, -1);
-		//glm::vec3 triPoint_B = glm::vec3(1, -1, -1);
-		//glm::vec3 triPoint_C = glm::vec3(0, 1, -1);
-
-		
-
 		glm::vec3 triPoint_A = glm::vec3(-1, -1, -1); //left
 		glm::vec3 triPoint_B = glm::vec3( 1, -1, -1); //right
 		glm::vec3 triPoint_C = glm::vec3( 0,  1, -1); //top
 
+	};
 
+	struct Slide_VectorProjectionExplanation : public SlideBase
+	{
+		using Parent = SlideBase;
+	protected:
+		virtual void init() override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
+		void handleVisualVectorUpdated(const ClickableVisualVector& updatedVec);
 
+		//sp<ho::ImmediateTriangle> triRender = nullptr;
+		//sp<nho::VisualVector> genericVector = nullptr;
+		//sp<nho::VisualPoint> genericPoint = nullptr;
 
+		sp<ClickableVisualVector> aVec;
+		sp<ClickableVisualVector> bVec;
+		
+		sp<nho::VectorProjectionAnimation> projectionAnim;
 
+		sp<ho::TextBlockSceneNode> text;
+	};
 
+	struct Slide_BaryCentricsExplanation : public SlideBase
+	{
+	protected:
+		virtual void init() override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
 
+		sp<ho::ImmediateTriangle> triRender = nullptr;
+		sp<nho::VisualVector> genericVector = nullptr;
+		sp<nho::VisualPoint> genericPoint = nullptr;
+		sp<ho::TextBlockSceneNode> text;
+	private:
+		glm::vec3 rayStart{ -100.f };
+		glm::vec3 rayEnd{ -100.1f };
+	private:
+		sp<nho::ClickableVisualPoint> pntA = nullptr;
+		sp<nho::ClickableVisualPoint> pntB = nullptr;
+		sp<nho::ClickableVisualPoint> pntC = nullptr;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		sp<nho::ClickableVisualPoint> testPoint = nullptr;
 	};
 
 
+	struct Slide_MollerAndTrumbore : public SlideBase
+	{
+	protected:
+		virtual void init() override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override{SlideBase::gatherInteractableCubeObjects(objectList);}
 
+		virtual void doTrace();
 
+		sp<ho::ImmediateTriangle> triRender = nullptr;
+		sp<nho::VisualVector> genericVector = nullptr;
+		sp<nho::VisualPoint> genericPoint = nullptr;
+	private:
+		glm::vec3 rayStart{ -100.f };
+		glm::vec3 rayEnd{ -100.1f };
+	private: 
+		glm::vec3 triPoint_A = glm::vec3(-1, -1, -1); //left
+		glm::vec3 triPoint_B = glm::vec3(1, -1, -1); //right
+		glm::vec3 triPoint_C = glm::vec3(0, 1, -1); //top
+	};
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MOLLER TRUMBORE CODE
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#define EPSILON 0.000001
+#define CROSS(dest, v1, v2)\
+	dest[0]=v1[1]*v2[2]-v1[2]*v2[1];\
+	dest[1]=v1[2]*v2[0]-v1[0]*v2[2];\
+	dest[2]=v1[0]*v2[1]-v1[1]*v2[0];
+#define DOT(v1,v2) (v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])
+#define SUB(dest, v1, v2)\
+	dest[0]=v1[0]-v2[0];\
+	dest[1]=v1[1]-v2[1];\
+	dest[2]=v1[2]-v2[2];
+#define TEST_CULL
 
+	int moller_trumbore_intersect_triangle(
+		double orig[3], double dir[3], 
+		double vert0[3], double vert1[3], double vert2[3],
+		double*t, double*u, double*v)	//out params
+	{
+		double edge1[3], edge2[3], tvec[3], pvec[3], qvec[3];
+		double det, inv_det;
 
+		/* find vectors for two edges sharing vert0 */
+		SUB(edge1, vert1, vert0);
+		SUB(edge2, vert2, vert0);
 
+		/*begin calculating determinant - also used to calculate u parameter*/
+		CROSS(pvec, dir, edge2);
 
+		/*if determinant is near zero, ray lies in plane of triangle */
+		det = DOT(edge1, pvec);
 
+#ifdef TEST_CULL	/*define TEST_CULL if culling is desired */
+		if (det < EPSILON) 
+			return 0;
 
+		/* calculate distance from vert0 to ray origin*/
+		SUB(tvec, orig, vert0);
 
+		/*calculate U parameter and test bounds */
+		*u = DOT(tvec, pvec);
+		if (*u < 0.0 || *u > det)
+			return 0;
+		
+		/*prepare to test V parameter */
+		CROSS(qvec, tvec, edge1);
 
+		/*calculate V parameter and test bounds */
+		*v = DOT(dir, qvec);
+		if (*v < 0.0 || *u + *v > det)
+			return 0;
+		/* calculate t, scale parameters, ray intersects triangle */
+		*t = DOT(edge2, qvec);
+		inv_det = 1.0 / det;
+		*t *= inv_det;
+		*u *= inv_det;
+		*v *= inv_det;
+#else /*the non-culling branch*/
+		if (det > -EPSILON && det < EPSILON)
+			return 0;
+		inv_det = 1.0 / det;
 
+		/* calculate distances from vert0 to ray origin */
+		SUB(tvec, orig, vert0);
+
+		/* calculate U parameter and test bounds */
+		*u = DOT(tvec, pvec) * inv_det;
+		if (*u < 0.0 || *u > 1.0)
+			return 0;
+
+		/* prepare to test V parameter */
+		CROSS(qvec, tvec, edge1);
+
+		/* calculate V parameter and test bounds */
+		*v = DOT(dir, qvec) * inv_det;
+		if (*v < 0.0 || *u + *v > 1.0)
+			return 0;
+
+		*t = DOT(edge2, qvec) * inv_det;
+#endif
+		return 1;
+	}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// end moller trumbore code
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -440,7 +586,20 @@ namespace ray_tri_ns
 		font = new_sp<ho::Montserrat_BMF>("./assets/textures/font/Montserrat_ss_alpha_1024x1024_wb.png");
 		TestText3D = new_sp<ho::TextBlockSceneNode>(font, "Testing 3 2 1.");
 
+		////////////////////////////////////////////////////////
+		// Vector projection video
+		////////////////////////////////////////////////////////
+		slides.push_back(new_sp<Slide_VectorProjectionExplanation>());
 
+		////////////////////////////////////////////////////////
+		// MollerAndTrumbore Video
+		////////////////////////////////////////////////////////
+		slides.push_back(new_sp<Slide_BaryCentricsExplanation>());
+		slides.push_back(new_sp<Slide_MollerAndTrumbore>());
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// intuitive ray-triangle video
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		slides.push_back(new_sp<Slide_HighlevelOverview>());
 		slides.push_back(new_sp<Slide_VectorAndPointReview>());
 		slides.push_back(new_sp<Slide_RayReview>());
@@ -449,6 +608,8 @@ namespace ray_tri_ns
 		slides.push_back(new_sp<Slide_PlaneEquation>());
 		slides.push_back(new_sp<Slide_VectorVsRay>());
 		slides.push_back(new_sp<Slide_LiveCoding>());
+
+		
 
 		//debug testing
 		//slides.push_back(new_sp<Slide_TestParentChild>());
@@ -1767,27 +1928,420 @@ namespace ray_tri_ns
 
 	}
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// vector projection explanation
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void Slide_VectorProjectionExplanation::init()
+	{
+		using namespace glm;
+		Parent::init();
+
+		//genericVector = new_sp<nho::VisualVector>();
+		//genericVector->bUseCenteredMesh = false;
+		//genericPoint = new_sp<nho::VisualPoint>();
+
+		aVec = new_sp<ClickableVisualVector>();
+		bVec = new_sp<ClickableVisualVector>();
+		projectionAnim = new_sp<nho::VectorProjectionAnimation>();
+		projectionAnim->setColor(vec3(1, 0, 0));
+
+		aVec->setVector(vec3(2.f, 1.f, 0));
+		bVec->setVector(vec3(2.5f, 0.f, 0));
+
+		aVec->eventValuesUpdated.addWeakObj<Slide_VectorProjectionExplanation>(event_this(), &Slide_VectorProjectionExplanation::handleVisualVectorUpdated);
+		bVec->eventValuesUpdated.addWeakObj<Slide_VectorProjectionExplanation>(event_this(), &Slide_VectorProjectionExplanation::handleVisualVectorUpdated);
+
+		text = new_sp<ho::TextBlockSceneNode>(RayTriDemo::font, "0.f");
+		text->setLocalPosition(vec3(0.f, -1.f, 0.f));
+
+	}
+
+	void Slide_VectorProjectionExplanation::render_game(float dt_sec)
+	{
+		using namespace glm;
+
+		Parent::render_game(dt_sec);
+
+		if (rd->camera)
+		{
+			aVec->render(rd->projection_view, rd->camera->getPosition());
+			bVec->render(rd->projection_view, rd->camera->getPosition());
+
+			if (QuaternionCamera* camera = dynamic_cast<QuaternionCamera*>(rd->camera))
+			{
+				text->setLocalRotation(camera->getRotation());
+				text->setLocalScale(vec3(5.f));
+				text->wrappedText->text = "vector projection review";
+				//text->render(rd->projection, rd->view);
+			}
+
+			projectionAnim->render(rd->projection_view, rd->camera->getPosition());
+		}
+	}
+
+	void Slide_VectorProjectionExplanation::render_UI(float dt_sec)
+	{
+		Parent::render_UI(dt_sec);
+
+		SlideBase::render_UI(dt_sec);
+
+		static bool bFirstDraw = true;
+		if (bFirstDraw)
+		{
+			bFirstDraw = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
+
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Vector projections", nullptr, flags);
+		{
+			if (ImGui::Button("project"))
+			{
+				if (const sp<nho::ClickableVisualVector>& selection = getSelection())
+				{
+					projectionAnim->projectFromAtoB(*selection, selection == aVec ? *bVec:*aVec);
+				}
+				else
+				{
+					projectionAnim->projectFromAtoB(*aVec, *bVec);
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("clear"))
+			{
+				projectionAnim->setShouldRender(false);
+			}
+			if (projectionAnim->animMode == nho::EAnimMode::FASTER_TIP)
+			{
+				ImGui::SameLine();
+				ImGui::SliderFloat("tip speed factor", &projectionAnim->animSpeedupFactor, 0.f, 1.f);
+			}
+			ImGui::SliderFloat("duration sec", &projectionAnim->animDurSec, 0.25f, 5.f);
+			static int proxyAnimMode = int(projectionAnim->animMode);
+			if (ImGui::SliderInt("anim", &proxyAnimMode, 0, 2))
+			{
+				projectionAnim->animMode = static_cast<nho::EAnimMode::type>(proxyAnimMode);
+			}
+			ImGui::Checkbox("loop", &projectionAnim->bLoop);
+
+		}
+		ImGui::End();
+	}
+
+	void Slide_VectorProjectionExplanation::tick(float dt_sec)
+	{
+		Parent::tick(dt_sec);
+
+		projectionAnim->tick(dt_sec);
+	}
+
+	void Slide_VectorProjectionExplanation::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		Parent::gatherInteractableCubeObjects(objectList);
+
+		objectList.push_back(&aVec->startCollision->getTriangleList());
+		objectList.push_back(&aVec->endCollision->getTriangleList());
+		objectList.push_back(&bVec->startCollision->getTriangleList());
+		objectList.push_back(&bVec->endCollision->getTriangleList());
+	}
 
 
+	void Slide_VectorProjectionExplanation::handleVisualVectorUpdated(const ClickableVisualVector& updatedVec)
+	{
+		if (projectionAnim)
+		{
+			projectionAnim->setShouldRender(false);
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// barycentric coordinate review
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	void Slide_BaryCentricsExplanation::init()
+	{
+		SlideBase::init();
+
+		triRender = new_sp<ho::ImmediateTriangle>();
+
+		pntA = new_sp<nho::ClickableVisualPoint>();
+		pntB = new_sp<nho::ClickableVisualPoint>();
+		pntC = new_sp<nho::ClickableVisualPoint>();
+		testPoint = new_sp<nho::ClickableVisualPoint>();
+
+		glm::vec3 triPoint_A = glm::vec3(-1, -1, -1); //left
+		glm::vec3 triPoint_B = glm::vec3(1, -1, -1); //right
+		glm::vec3 triPoint_C = glm::vec3(0, 1, -1); //top
+		pntA->setPosition(triPoint_A);
+		pntB->setPosition(triPoint_B);
+		pntC->setPosition(triPoint_C);
+
+		testPoint->setPosition(0.33f*triPoint_A + 0.33f*triPoint_B + 0.33f*triPoint_C);
+
+		genericVector = new_sp<nho::VisualVector>();
+		genericVector->bUseCenteredMesh = false;
+		genericPoint = new_sp<nho::VisualPoint>();
+		text = new_sp<ho::TextBlockSceneNode>(RayTriDemo::font, "0.f");
+	}
+
+	void Slide_BaryCentricsExplanation::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+		using namespace glm;
+
+		triRender->renderTriangle(pntA->getPosition(), pntB->getPosition(), pntC->getPosition(), glm::vec3(0.0f, 0.5f, 0.0f), rd->projection_view);
+
+		if (rd->camera)
+		{
+			glm::vec3 camPos = rd->camera->getPosition();
+			pntA->render(rd->projection_view, camPos);
+			pntB->render(rd->projection_view, camPos);
+			pntC->render(rd->projection_view, camPos);
+
+			testPoint->render(rd->projection_view, camPos);
+
+			genericVector->setStart(rayStart);
+			genericVector->setEnd(rayEnd);
+			genericVector->render(rd->projection_view, rd->camera->getPosition());
+
+			if (QuaternionCamera* camera = dynamic_cast<QuaternionCamera*>(rd->camera))
+			{
+				auto renderPointText = [&](
+					const sp<nho::ClickableVisualPoint>& a
+					,const sp<nho::ClickableVisualPoint>& b
+					,const sp<nho::ClickableVisualPoint>& c
+					,const char* const textStr
+					//const sp<ho::TextBlockSceneNode>& text
+					) 
+				{
+					vec3 c_to_a = a->getPosition() - c->getPosition();
+					vec3 b_to_a = a->getPosition() - b->getPosition();
+					vec3 textOffset = glm::normalize(c_to_a + b_to_a);
+					constexpr float textOffsetDist = 0.25f;
+					vec3 textPosition = textOffset * textOffsetDist + a->getPosition();
+
+					text->setLocalPosition(textPosition);
+					text->setLocalRotation(camera->getRotation());
+					text->wrappedText->text = textStr;
+					text->setLocalScale(vec3(5.f));
+				};
+				renderPointText(pntA, pntB, pntC, "(1,0,0)");
+				text->render(rd->projection, rd->view);
+
+				renderPointText(pntB, pntC, pntA, "(0,1,0)");
+				text->render(rd->projection, rd->view);
+
+				renderPointText(pntC, pntA, pntB, "(0,0,1)");
+				text->render(rd->projection, rd->view);
+
+				{
+					////////////////////////////////////////////////////////
+					//render barycentric coordinates of test point
+					////////////////////////////////////////////////////////
+					auto calcBarycentric = [&](
+						const sp<nho::ClickableVisualPoint>& a
+						, const sp<nho::ClickableVisualPoint>& b
+						, const sp<nho::ClickableVisualPoint>& c
+					)
+					{
+						vec3 aPos = a->getPosition();
+						vec3 bPos = b->getPosition();
+						vec3 cPos = c->getPosition();
+
+						vec3 b_to_a = aPos - bPos;
+						vec3 b_to_c = c->getPosition() - bPos;
+
+						vec3 bc_proj = projectAontoB(b_to_a, b_to_c);
+
+						vec3 projectionPoint = bPos + bc_proj;
+						vec3 edgeProjPoint_to_TestPoint = testPoint->getPosition() - projectionPoint;
+
+						vec3 perpendicularWithEdgeVec = aPos - projectionPoint; //perpendicular line to triangle edge
+						vec3 testPoint_projOnTo_perpendicular = projectAontoB(edgeProjPoint_to_TestPoint, perpendicularWithEdgeVec);
+
+						float lengthRatio = glm::length(testPoint_projOnTo_perpendicular) / glm::length(perpendicularWithEdgeVec);
+						return lengthRatio;
+					};
+
+					float barycentric_a = calcBarycentric(pntA, pntB, pntC);
+					float barycentric_b = calcBarycentric(pntB, pntC, pntA);
+					float barycentric_c = calcBarycentric(pntC, pntA, pntB);
+
+					char textBuffer[128];
+					snprintf(textBuffer, sizeof(textBuffer), "(%3.2f, %3.2f, %3.2f)", barycentric_a, barycentric_b, barycentric_c);
+					text->wrappedText->text = std::string(textBuffer);
+
+					const float pointOffsetDis = 0.25f;
+					text->setLocalPosition(
+						testPoint->getPosition()
+						+ camera->getRight()*pointOffsetDis
+						+ camera->getUp()*pointOffsetDis
+						+ -camera->getFront()*pointOffsetDis);
+					text->wrappedText->bitMapFont->setFontColor(vec3(1.f, 0.f, 0.f));
+					text->render(rd->projection, rd->view);
+					text->wrappedText->bitMapFont->setFontColor(vec3(1.0f));
+				}
+
+			}
+
+		}
+	}
+
+	void Slide_BaryCentricsExplanation::render_UI(float dt_sec)
+	{
+		SlideBase::render_UI(dt_sec);
+
+		static bool bFirstDraw = true;
+		if (bFirstDraw)
+		{
+			bFirstDraw = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
+
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Barycentrics review", nullptr, flags);
+		{
+
+		}
+		ImGui::End();
+	}
+
+#define COMPILETIME_SQUARE(val) val * val
+
+	void Slide_BaryCentricsExplanation::tick(float dt_sec)
+	{
+		using namespace glm;
+		SlideBase::tick(dt_sec);
+
+		//if test point is not within some distance to plane, move it to triangle plane
+		{
+			vec3 toTestPoint = testPoint->getPosition() - pntA->getPosition();
+
+			vec3 edge1 = pntB->getPosition() - pntA->getPosition();
+			vec3 edge2 = pntC->getPosition() - pntA->getPosition();
+			vec3 normal = glm::cross(edge1, edge2);
+
+			vec3 project = projectAontoB(toTestPoint, normal);
+			float distFromPlane2 = glm::length2(project);
+			constexpr float distTolerance2 = COMPILETIME_SQUARE(0.01f);
+			if (distFromPlane2 > distTolerance2)
+			{
+				glm::vec3 newPos = testPoint->getPosition();
+				newPos = newPos + -project; //may need to do some sign comparison here
+				if (!anyValueNAN(newPos))
+				{
+					testPoint->setPosition(newPos);
+				}
+			}
+		}
+	}
 
 
+	void Slide_BaryCentricsExplanation::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		SlideBase::gatherInteractableCubeObjects(objectList);
+
+		objectList.push_back(&pntA->pointCollision->getTriangleList());
+		objectList.push_back(&pntB->pointCollision->getTriangleList());
+		objectList.push_back(&pntC->pointCollision->getTriangleList());
+
+		objectList.push_back(&testPoint->pointCollision->getTriangleList());
+	}
+
+	////////////////////////////////////////////////////////
+	// Moller Trumbore ray tri intersection
+	////////////////////////////////////////////////////////
+	void Slide_MollerAndTrumbore::init()
+	{
+		SlideBase::init();
+
+		triRender = new_sp<ho::ImmediateTriangle>();
+		genericVector = new_sp<nho::VisualVector>();
+		genericVector->bUseCenteredMesh = false;
+		genericPoint = new_sp<nho::VisualPoint>();
+	}
 
 
+	void Slide_MollerAndTrumbore::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+
+		triRender->renderTriangle(triPoint_A, triPoint_B, triPoint_C, glm::vec3(1.f, 0, 0), rd->projection_view);
+
+		if (rd->camera)
+		{
+			genericVector->setStart(rayStart);
+			genericVector->setEnd(rayEnd);
+			genericVector->render(rd->projection_view, rd->camera->getPosition());
+		}
+	}
+
+	void Slide_MollerAndTrumbore::render_UI(float dt_sec)
+	{
+		SlideBase::render_UI(dt_sec);
+
+		static bool bFirstDraw = true;
+		if (bFirstDraw)
+		{
+			bFirstDraw = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
+
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Trumbore and Moller", nullptr, flags);
+		{
+			if (ImGui::Button("run ray tri intersection"))
+			{
+				doTrace();
+			}
+		}
+		ImGui::End();
+	}
+
+	void Slide_MollerAndTrumbore::tick(float dt_sec)
+	{
+		SlideBase::tick(dt_sec);
+	}
+
+	void Slide_MollerAndTrumbore::doTrace()
+	{
+		using namespace glm;
+		
+		rayStart = rd->camera->getPosition();
+		vec3 rayDir = rd->camera->getFront();
 
 
+		double orig[3];
+		double dir[3];
+		double vert0[3];
+		double vert1[3];
+		double vert2[3];
+		double t, u, v; //barycentrics
 
+		auto VEC3_TO_ARRAY = [](glm::vec3 vec, double* c_array)
+		{
+			c_array[0] = double(vec.x);
+			c_array[1] = double(vec.y);
+			c_array[2] = double(vec.z);
+		};
 
+		VEC3_TO_ARRAY(rayStart, orig);
+		VEC3_TO_ARRAY(rayDir, dir);
+		VEC3_TO_ARRAY(triPoint_A, vert0);
+		VEC3_TO_ARRAY(triPoint_B, vert1);
+		VEC3_TO_ARRAY(triPoint_C, vert2);
 
-
-
-
-
-
-
-
-
-
-
+		if (moller_trumbore_intersect_triangle(orig, dir, vert0, vert1, vert2, &t, &u, &v))
+		{
+			std::cout << "hit the triangle with moller_trumbore" << std::endl;
+			rayEnd = float(t) * rayDir + rayStart;
+		}
+		else
+		{
+			std::cout << "missed moller_trumbore" << std::endl;
+			rayEnd = 10.f * rayDir + rayStart;
+		}
+	}
 
 	////////////////////////////////////////////////////////
 	// all renderables base

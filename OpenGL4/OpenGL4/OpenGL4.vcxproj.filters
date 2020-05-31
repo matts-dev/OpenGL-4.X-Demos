@@ -147,6 +147,12 @@
     <ClCompile Include="src\video_examples\ClickableVisualRay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\new_utils\cpp_required\ProjectionAnimation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\new_utils\cpp_required\curves\CurveSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="static_lib\glfw3.lib" />
@@ -1123,6 +1129,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\video_examples\ClickableVisualRay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\cpp_required\ProjectionAnimation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\cpp_required\curves\CurveSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

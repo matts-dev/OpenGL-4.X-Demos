@@ -11,6 +11,7 @@
 #include "../new_utils/cpp_required/TriangleListDebugger.h"
 #include "../new_utils/header_only/line_renderer.h"
 #include "../new_utils/header_only/plane_renderer.h"
+#include "../new_utils/header_only/Event.h"
 
 class SceneNode_TriangleList;
 
@@ -54,7 +55,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // InteractableDemo - A demo that has built in support for mouse interaction of moving scene node based objects
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class InteractableDemo : public IDemoInterface
+class InteractableDemo : public IDemoInterface, public std::enable_shared_from_this<InteractableDemo>, public ho::IEventSubscriber
 {
 public:
 	InteractableDemo();

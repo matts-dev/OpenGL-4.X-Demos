@@ -156,6 +156,8 @@
     <ClCompile Include="src\demos\tessellation_shaders\2.1_bezier_pointnormal_triangle_tessellation_with_geometry.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\2_bezier_pointnormal_triangle_tessellation.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\3_model_tessellation.cpp" />
+    <ClCompile Include="src\new_utils\cpp_required\curves\CurveSystem.cpp" />
+    <ClCompile Include="src\new_utils\cpp_required\ProjectionAnimation.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\TriangleListDebugger.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\VisualPoint.cpp" />
     <ClCompile Include="src\video_examples\ClickableVisualPoint.cpp" />
@@ -471,6 +473,8 @@
     <ClInclude Include="includes\imgui.1.69.gl\imstb_truetype.h" />
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
+    <ClInclude Include="src\new_utils\cpp_required\curves\CurveSystem.h" />
+    <ClInclude Include="src\new_utils\cpp_required\ProjectionAnimation.h" />
     <ClInclude Include="src\new_utils\cpp_required\TriangleListDebugger.h" />
     <ClInclude Include="src\new_utils\cpp_required\VisualPoint.h" />
     <ClInclude Include="src\video_examples\ClickableVisualPoint.h" />

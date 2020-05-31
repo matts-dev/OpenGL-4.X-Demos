@@ -16,6 +16,7 @@ public:
 	virtual void inputPoll(float dt_sec)override;
 protected:
 	virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO *>& objectList) override;
+	const sp<nho::ClickableVisualVector>& getSelection() { return selectionLater; }
 private:
 	void tick_drawVector(float dt_sec);
 	void tick_selectVectors(float dt_sec);

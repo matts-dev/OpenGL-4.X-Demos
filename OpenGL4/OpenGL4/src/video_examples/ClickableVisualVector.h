@@ -66,6 +66,7 @@ namespace nho
 		sp<SceneNode_VectorEnd> startCollision;
 		sp<SceneNode_VectorEnd> endCollision;
 		//float tipCollisionCorrectionDistance = 0.5f;
+		ho::Event<const ClickableVisualVector&> eventValuesUpdated;
 	private:
 		bool bUpdatingFromSceneNode = false;
 	};

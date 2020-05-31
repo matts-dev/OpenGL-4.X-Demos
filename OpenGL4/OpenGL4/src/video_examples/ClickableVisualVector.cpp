@@ -41,7 +41,11 @@ namespace nho
 			xform.position = values.startPos + values.dir;
 			//xform.position -= glm::normalize(values.dir) * tipCollisionCorrectionDistance; //since model tip is 0,0,0, collision should be moved back a bit to correctly grab
 			endCollision->setLocalTransform(xform);
+
 		}
+
+		//let outside world know something changed
+		eventValuesUpdated.broadcast(*this);
 	}
 
 

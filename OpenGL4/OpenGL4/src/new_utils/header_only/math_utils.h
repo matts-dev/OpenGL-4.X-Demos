@@ -78,5 +78,26 @@ if(anyValueNAN(value))\
 		return rot;
 	}
 
+	static glm::vec3 projectAontoB(const glm::vec3& a, const glm::vec3& b)
+	{
+		using namespace glm;
+
+		//scalar projection is doting a vector onto the normalized vector of b
+		//		vec3 bUnitVec = b / ||b||;	//ie normali
+		//		scalarProj = a dot (b/||b||);	//ie dot with bUnitVec
+		// you then then need to scale up the bUnitVector to get a projection vector
+		//		vec3 projection = bUnitVector * scalarProjection
+		// this can be simplified so we never have to do a square root for normalization (this looks better when written in 
+		//		vec3 projection = bUnitVector * scalarProjection
+		//		vec3 projection = b / ||b||	  * a dot (b/||b||)
+		//		vec3 projection = b / ||b||	  * (a dot b) / ||b||		//factor around dot product
+		//		vec3 projection =     b * (a dot b) / ||b||*||b||		//multiply these two terms
+		//		vec3 projection =     b * ((a dot b) / ||b||*||b||)		//recale dot product will product scalar, lump scalars in parenthesis
+		//		vec3 projection =     ((a dot b) / ||b||*||b||) * b;	//here b is a vector, so we have scalar * vector;
+		//		vec3 projection =     ((a dot b) / (b dot b) * b;	//recall that dot(b,b) == ||b||^2 == ||b||*||b||
+		vec3 projection = (glm::dot(a, b) / glm::dot(b, b)) * b;
+		return projection;
+	}
+
 
 }

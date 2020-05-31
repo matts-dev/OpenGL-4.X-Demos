@@ -34,8 +34,8 @@ namespace nho
 		void setStart(glm::vec3 newStart);
 		void setEnd(glm::vec3 newEnd);
 
-		glm::vec3 getVec() { return pod.dir; }
-		glm::vec3 getStart() { return pod.startPos; }
+		glm::vec3 getVec() const{ return pod.dir; }
+		glm::vec3 getStart() const { return pod.startPos; }
 	private:
 		void updateCache();
 	public:

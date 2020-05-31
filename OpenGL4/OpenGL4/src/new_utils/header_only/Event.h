@@ -10,16 +10,19 @@
 #include <assert.h>
 #include <vector>
 #include <functional>
+#include <type_traits>
 
 #include "share_ptr_typedefs.h"
 
 
 namespace ho
 {	
+
 	struct IEventSubscriber
 	{
-		
 	};
+
+#define event_this() std::static_pointer_cast< std::remove_reference<decltype(*this)>::type >(sp_this())
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Dev Notes:

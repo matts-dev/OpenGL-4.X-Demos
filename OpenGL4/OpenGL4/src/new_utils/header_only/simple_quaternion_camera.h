@@ -178,6 +178,7 @@ public:
 	virtual glm::vec3 getUp() override { return v_axis; }
 	virtual glm::vec3 getPosition() override { return pos; }
 	virtual float getFOVy_rad() override { return fovY_rad; }
+	virtual glm::quat getRotation() const { return rotation; }
 public: //public so demostrations can easily tweak; tick will correct
 	float cameraSpeed = 10.0f; //NDCs per second
 	float rollSpeed = glm::radians<float>(180.f);
