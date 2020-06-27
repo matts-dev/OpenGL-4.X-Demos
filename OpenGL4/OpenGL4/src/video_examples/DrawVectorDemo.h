@@ -23,6 +23,8 @@ private:
 	void tick_dragPoint(float dt_sec);
 protected:
 	bool bEnablePointDrawing = true;
+	bool bEnableVectorDrawing = true;
+	bool bColorSelectedVectors = true;
 	bool bAltWasPressed = false;
 	std::vector<sp<nho::ClickableVisualVector>> customVectors;
 	std::vector<sp<nho::ClickableVisualPoint>> customPoints;

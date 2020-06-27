@@ -33,7 +33,7 @@ void DrawVectorDemo::tick_drawVector(float dt_sec)
 
 	bool bDrawingLine = lineStart && lineEnd;
 	bool bCreatedVectorForLine = bool(newVector);
-	if (bDrawingLine)
+	if (bDrawingLine && bEnableVectorDrawing)
 	{
 		if (!bCreatedVectorForLine)
 		{
@@ -77,7 +77,7 @@ void DrawVectorDemo::tick_selectVectors(float dt_sec)
 					{
 						if (sn && sn->owner)
 						{
-							if (selectionFormer)
+							if (selectionFormer && bColorSelectedVectors)
 							{
 								selectionFormer->color = glm::vec3(1, 1, 1);
 							}
@@ -85,11 +85,11 @@ void DrawVectorDemo::tick_selectVectors(float dt_sec)
 							selectionFormer = selectionLater;
 							selectionLater = sn->owner->getShared();
 
-							if (selectionFormer)
+							if (selectionFormer && bColorSelectedVectors)
 							{
 								selectionFormer->color = glm::vec3(0, 1, 0);
 							}
-							if (selectionLater)
+							if (selectionLater && bColorSelectedVectors)
 							{
 								selectionLater->color = glm::vec3(1, 0, 0);
 							}

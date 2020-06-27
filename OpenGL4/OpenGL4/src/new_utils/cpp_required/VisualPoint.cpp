@@ -180,6 +180,7 @@ namespace nho
 		pod.cachedXform = glm::scale(pod.cachedXform, glm::vec3(0.025f)); //always scale down to give intuitive feel for scale 1.0f
 		pod.cachedXform = glm::scale(pod.cachedXform, pod.scale);
 		onValuesUpdated(pod);
+		eventValuesUpdated.broadcast(*this);
 	}
 
 	VisualPoint::~VisualPoint()

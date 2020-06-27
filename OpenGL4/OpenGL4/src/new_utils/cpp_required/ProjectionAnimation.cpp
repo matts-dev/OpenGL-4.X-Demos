@@ -2,13 +2,16 @@
 #include "VisualVector.h"
 #include "../header_only/math_utils.h"
 #include "VisualPoint.h"
+#include "../header_only/line_renderer.h"
+#include <vector>
 
 namespace nho
 {
+	/*static*/sp<ho::LineRenderer> VectorProjectionAnimation::lineRenderer;
 
 	void VectorProjectionAnimation::tick(float dt_sec)
 	{
-		animCurTime += dt_sec;
+		animCurTime += bPaused ? 0 : dt_sec;
 
 		bool bUseEqualAnim = false;
 
@@ -84,20 +87,14 @@ namespace nho
 		}
 	}
 
-	void VectorProjectionAnimation::projectFromAtoB(const VisualVector& a, const VisualVector& b)
+
+	void VectorProjectionAnimation::projectFromAtoB(const glm::vec3& vecA, const glm::vec3& vecB, const glm::vec3& aStart, const glm::vec3& bStart, bool bResetAnimation/*=true*/)
 	{
 		using namespace glm;
 
-		//this assumes that the vectors share a base point
-		const vec3 vecA = a.getVec();
-		const vec3 aStart = a.getStart(); //the pointi n space that the visualizatin of the vector comes from
-
-		const vec3 vecB = b.getVec();
-		const vec3 bStart = b.getStart();
-
 		const vec3 resultProjection = MathUtils::projectAontoB(vecA, vecB);
 
-		animCurTime = 0;
+		animCurTime = bResetAnimation ? 0 : animCurTime;
 
 		const vec3 vecA_n = glm::normalize(vecA);
 		const vec3 vecB_n = glm::normalize(vecB);
@@ -115,6 +112,21 @@ namespace nho
 		bRender = true;
 	}
 
+
+	void VectorProjectionAnimation::projectFromAtoB(const VisualVector& a, const VisualVector& b, bool bResetAnimation /*= true*/)
+	{
+		using namespace glm;
+
+		//this assumes that the vectors share a base point
+		const vec3 vecA = a.getVec();
+		const vec3 aStart = a.getStart(); //the pointi n space that the visualizatin of the vector comes from
+
+		const vec3 vecB = b.getVec();
+		const vec3 bStart = b.getStart();
+
+		projectFromAtoB(vecA, vecB, aStart, bStart, bResetAnimation);
+	}
+
 	void VectorProjectionAnimation::render(const glm::mat4& projection_view, std::optional<glm::vec3> cameraPos) const
 	{
 		if (bRender)
@@ -122,6 +134,15 @@ namespace nho
 			for (const sp<VisualPoint>& pnt : lerpPoints)
 			{
 				pnt->render(projection_view, cameraPos);
+			}
+
+			if (bRenderLineFromTip)
+			{
+				const LerpData& lastData = lerpData.back();
+				const sp<VisualPoint>& point = lerpPoints.back();
+
+				//use point position so that line updates with animation
+				lineRenderer->renderLine(lastData.start, point->getPosition(), point->color, projection_view);
 			}
 		}
 	}
@@ -134,8 +155,35 @@ namespace nho
 		}
 	}
 
+	void VectorProjectionAnimation::setPointScale(float newScale)
+	{
+		pointScale = newScale;
+		for (const sp<VisualPoint>& pnt : lerpPoints)
+		{
+			pnt->setUserScale(glm::vec3(pointScale));
+		}
+	}
+
+	void VectorProjectionAnimation::pauseAnimation()
+	{
+		bPaused = true;
+	}
+
+	void VectorProjectionAnimation::resumeAnimation()
+	{
+		bPaused = false;
+	}
+
+	bool VectorProjectionAnimation::isAnimationDone() const
+	{
+		return animCurTime >= animDurSec;
+	}
+
+
 	void VectorProjectionAnimation::postConstruct()
 	{
+		if (!lineRenderer) lineRenderer = new_sp<ho::LineRenderer>();
+
 		//generate the points for the animation
 		for (size_t pnt = 0; pnt < numPointsInAnimation; pnt++)
 		{
@@ -144,6 +192,8 @@ namespace nho
 		}
 
 	}
+
+	
 
 }
 

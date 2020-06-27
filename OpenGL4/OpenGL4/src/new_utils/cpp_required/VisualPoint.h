@@ -3,6 +3,7 @@
 #include <optional>
 #include "../header_only/Transform.h"
 #include "../header_only/share_ptr_typedefs.h"
+#include "../header_only/Event.h"
 
 //forward declarations
 namespace ho
@@ -37,6 +38,7 @@ namespace nho
 		/** Additional scaling is applied, user scale is only a portion of that scaling.*/
 		glm::vec3 getUserScale() { return pod.scale; }
 		glm::vec3 getPosition() { return pod.position; }
+		ho::Event<const VisualPoint&> eventValuesUpdated;
 	private:
 		void updateCache();
 	public:

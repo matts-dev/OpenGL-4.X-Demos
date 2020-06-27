@@ -17,14 +17,14 @@ namespace nho
 	struct Curve
 	{
 		/** Give a float percentage on range [0,1] and a mapped float on range [0,1] will be returned. */
-		float eval_rigid(float a)
+		float eval_rigid(float a) const
 		{
 			if constexpr (CLAMP_CURVE_PARAMS) { a = glm::clamp(a, 0.f, 1.f); } //this can be removed at compile time for performance; though that is not advised
 
 			size_t stepIdx = size_t((RESOLUTION - 1) * a + 0.5f);
 			return curveSteps[stepIdx];
 		}
-		float eval_smooth(float a)
+		float eval_smooth(float a) const
 		{
 			if constexpr (CLAMP_CURVE_PARAMS) { a = glm::clamp(a, 0.f, 1.f); } //this can be removed at compile time for performance; though that is not advised
 

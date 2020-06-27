@@ -159,6 +159,7 @@
     <ClCompile Include="src\new_utils\cpp_required\curves\CurveSystem.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\ProjectionAnimation.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\TriangleListDebugger.cpp" />
+    <ClCompile Include="src\new_utils\cpp_required\VectorVisualizationTools\VectorGridLines.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\VisualPoint.cpp" />
     <ClCompile Include="src\video_examples\ClickableVisualPoint.cpp" />
     <ClCompile Include="src\video_examples\ClickableVisualRay.cpp" />
@@ -476,6 +477,7 @@
     <ClInclude Include="src\new_utils\cpp_required\curves\CurveSystem.h" />
     <ClInclude Include="src\new_utils\cpp_required\ProjectionAnimation.h" />
     <ClInclude Include="src\new_utils\cpp_required\TriangleListDebugger.h" />
+    <ClInclude Include="src\new_utils\cpp_required\VectorVisualizationTools\VectorGridLines.h" />
     <ClInclude Include="src\new_utils\cpp_required\VisualPoint.h" />
     <ClInclude Include="src\video_examples\ClickableVisualPoint.h" />
     <ClInclude Include="src\new_utils\header_only\ImmediateTriangleRenderer.h" />
@@ -504,6 +506,7 @@
     <ClInclude Include="src\old_utils\Shader.h" />
     <ClInclude Include="src\old_utils\Texture2D.h" />
     <ClInclude Include="src\old_utils\Utilities.h" />
+    <ClInclude Include="src\video_examples\ConcreteClasses\ray_triangle_intersection_video.h" />
     <ClInclude Include="src\video_examples\DrawVectorDemo.h" />
     <ClInclude Include="src\video_examples\InteractableDemo.h" />
     <ClInclude Include="src\video_examples\ClickableVisualRay.h" />
