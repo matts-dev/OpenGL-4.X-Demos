@@ -156,6 +156,9 @@
     <ClCompile Include="src\new_utils\cpp_required\VectorVisualizationTools\VectorGridLines.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\new_utils\cpp_required\InteractiveMatrix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="static_lib\glfw3.lib" />
@@ -1144,6 +1147,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\video_examples\ConcreteClasses\ray_triangle_intersection_video.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\new_utils\cpp_required\InteractiveMatrix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

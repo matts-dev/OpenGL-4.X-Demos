@@ -26,7 +26,7 @@ namespace ho
 	// shaders
 	//////////////////////////////////////////////////////////////////////////////////////
 
-	const char* glyphShader_vs = R"(
+	const char* const glyphShader_vs = R"(
 		#version 330
 		layout (location = 0) in vec3 vertPos;
 		layout (location = 1) in vec2 texUVCoord;
@@ -50,7 +50,7 @@ namespace ho
 
 	)";
 
-	const char* glyphShader_fs = R"(
+	const char* const glyphShader_fs = R"(
 		#version 330
 
 		uniform sampler2D texture0;

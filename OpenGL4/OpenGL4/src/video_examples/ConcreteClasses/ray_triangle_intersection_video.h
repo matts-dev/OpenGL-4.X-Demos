@@ -16,6 +16,7 @@ namespace nho
 	class ClickableVisualRay;
 	struct ClickableVisualPoint;
 	struct ClickableVisualVector;
+	class Matrix_3D;
 }
 
 struct TriangleList_SNO;
@@ -269,6 +270,10 @@ namespace ray_tri_ns
 		sp<ho::TextBlockSceneNode> text;
 	};
 
+	////////////////////////////////////////////////////////
+	// Scalar triple product review
+	////////////////////////////////////////////////////////
+
 	struct Slide_ScalarTripleProductReview : public SlideBase
 	{
 	public:
@@ -306,6 +311,30 @@ namespace ray_tri_ns
 		float timestamp_showPiped = 0.f;
 		float timestamp_areaSweep = 0.f;
 	};
+
+	////////////////////////////////////////////////////////
+	// Determinant Review
+	////////////////////////////////////////////////////////
+
+	struct Slide_DeterminantReview : public SlideBase
+	{
+	protected:
+		virtual void gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList) override;
+		virtual void init() override;
+		virtual void render_game(float dt_sec) override;
+		virtual void render_UI(float dt_sec) override;
+		virtual void tick(float dt_sec) override;
+	private:
+		sp<nho::Matrix_3D> matrix;
+		sp<ho::ImmediateTriangle> triRender = nullptr;
+		sp<nho::VisualVector> genericVector = nullptr;
+		sp<nho::VisualPoint> genericPoint = nullptr;
+	};
+
+
+	////////////////////////////////////////////////////////
+	// Barycentric reivew
+	////////////////////////////////////////////////////////
 
 	namespace EBarycentricMode
 	{

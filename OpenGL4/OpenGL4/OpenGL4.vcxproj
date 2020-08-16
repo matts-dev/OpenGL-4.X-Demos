@@ -157,6 +157,7 @@
     <ClCompile Include="src\demos\tessellation_shaders\2_bezier_pointnormal_triangle_tessellation.cpp" />
     <ClCompile Include="src\demos\tessellation_shaders\3_model_tessellation.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\curves\CurveSystem.cpp" />
+    <ClCompile Include="src\new_utils\cpp_required\InteractiveMatrix.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\ProjectionAnimation.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\TriangleListDebugger.cpp" />
     <ClCompile Include="src\new_utils\cpp_required\VectorVisualizationTools\VectorGridLines.cpp" />
@@ -475,6 +476,7 @@
     <ClInclude Include="includes\KHR\khrplatform.h" />
     <ClInclude Include="includes\stb_image.h" />
     <ClInclude Include="src\new_utils\cpp_required\curves\CurveSystem.h" />
+    <ClInclude Include="src\new_utils\cpp_required\InteractiveMatrix.h" />
     <ClInclude Include="src\new_utils\cpp_required\ProjectionAnimation.h" />
     <ClInclude Include="src\new_utils\cpp_required\TriangleListDebugger.h" />
     <ClInclude Include="src\new_utils\cpp_required\VectorVisualizationTools\VectorGridLines.h" />

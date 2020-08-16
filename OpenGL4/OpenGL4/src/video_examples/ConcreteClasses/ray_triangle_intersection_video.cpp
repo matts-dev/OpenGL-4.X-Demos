@@ -63,6 +63,7 @@
 #include "../../new_utils/cpp_required/VisualPoint.h"
 #include "../../new_utils/cpp_required/ProjectionAnimation.h"
 #include "../../new_utils/cpp_required/VectorVisualizationTools/VectorGridLines.h"
+#include "../../new_utils/cpp_required/InteractiveMatrix.h"
 
 using nho::VisualVector;
 using nho::ClickableVisualVector;
@@ -170,7 +171,7 @@ namespace ray_tri_ns
 	dest[0]=v1[0]-v2[0];\
 	dest[1]=v1[1]-v2[1];\
 	dest[2]=v1[2]-v2[2];
-#define TEST_CULL
+//#define TEST_CULL
 	int moller_trumbore_intersect_triangle_original(
 		double orig[3], double dir[3],
 		double vert0[3], double vert1[3], double vert2[3],
@@ -569,7 +570,7 @@ namespace ray_tri_ns
 		////////////////////////////////////////////////////////
 		// Vector projection video
 		////////////////////////////////////////////////////////
-		if constexpr (constexpr bool bEnableProjectionSlides = false)
+		if constexpr (constexpr bool bEnableProjectionSlides = true)
 		{
 			slides.push_back(new_sp<Slide_VectorProjectionExplanation>());
 			slides.push_back(new_sp<Slide_ProjectionOnAxesGrid>());
@@ -581,8 +582,9 @@ namespace ray_tri_ns
 		if constexpr (constexpr bool bEnableMTRayTriSlides = true)
 		{
 			slides.push_back(new_sp<Slide_BaryCentricsExplanation>());
-			slides.push_back(new_sp<Slide_MollerAndTrumbore>());
 			slides.push_back(new_sp<Slide_ScalarTripleProductReview>());
+			slides.push_back(new_sp<Slide_DeterminantReview>());
+			slides.push_back(new_sp<Slide_MollerAndTrumbore>());
 		}
 
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3730,6 +3732,61 @@ namespace ray_tri_ns
 
 			//glm::vec3 crossResult = glm::cross(first, second);
 		}
+	}
+	////////////////////////////////////////////////////////
+	// Determinant Review
+	////////////////////////////////////////////////////////
+
+	void Slide_DeterminantReview::gatherInteractableCubeObjects(std::vector<const TriangleList_SNO*>& objectList)
+	{
+		SlideBase::gatherInteractableCubeObjects(objectList);
+
+	}
+
+	void Slide_DeterminantReview::init()
+	{
+		SlideBase::init();
+
+		triRender = new_sp<ho::ImmediateTriangle>();
+		genericVector = new_sp<nho::VisualVector>();
+		genericVector->bUseCenteredMesh = false;
+		genericPoint = new_sp<nho::VisualPoint>();
+
+		matrix = new_sp<nho::Matrix_3D>();
+		matrix->setElements<float>({ {0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15} });
+
+	}
+
+	void Slide_DeterminantReview::render_game(float dt_sec)
+	{
+		SlideBase::render_game(dt_sec);
+
+		matrix->render(dt_sec, rd->projection, rd->view);
+	}
+
+	void Slide_DeterminantReview::render_UI(float dt_sec)
+	{
+		SlideBase::render_UI(dt_sec);
+
+		static bool bFirstDraw = true;
+		if (bFirstDraw)
+		{
+			bFirstDraw = false;
+			ImGui::SetNextWindowPos({ 1000, 0 });
+		}
+
+		ImGuiWindowFlags flags = 0;
+		ImGui::Begin("Determinant Review", nullptr, flags);
+		{
+
+		}
+		ImGui::End();
+
+	}
+
+	void Slide_DeterminantReview::tick(float dt_sec)
+	{
+		SlideBase::tick(dt_sec);
 	}
 
 }
