@@ -109,6 +109,7 @@ namespace
 		}
 
 		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(&openGLErrorCallback_4_3, nullptr);
 
 		glViewport(0, 0, width, height);
