@@ -3801,8 +3801,8 @@ static void true_main()
 	anim.start();
 }
 
-
-int main()
-{
-	true_main();
-}
+//
+//int main()
+//{
+//	true_main();
+//}

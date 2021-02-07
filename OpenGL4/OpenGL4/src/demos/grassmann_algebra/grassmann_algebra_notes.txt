@@ -1,0 +1,248 @@
+the video teaching all of this stuff
+	https://youtu.be/WZApQkDBr5o?list=PLMRtSei06iNK6B9D-Pjtvyp2lyzOCDLCz
+
+historical math:
+	quaternions			- hamilton 1843
+	exterior algebra	- Grassmann 1844	(theory of extension)
+	clifford algebra	- clifford 1878
+
+	Clifford Algebra = Quaternion Algebra + Grassman Algebra (there may be more components to clifford algebra)
+		Geometric Algebra is a special case of Clifford Algebra
+		Spacetime Algebra is a special case of Clifford Algebra
+		
+The Wedge Product
+	a ^ b
+	a wedge b
+	AKA
+		progressive product (grassmann's term)
+		exterior product (other people's term)
+	operands
+		scalars, vectors, bivectors, trivectors, etc
+				s = scalar
+				t = scalar
+				v = vector
+			rules:
+				s ^ t == t ^ s == s*t	//scalars just multiply
+				s ^ v == v ^ s == s*v	//scalars just scale a vector
+				v ^ v == 0				//a vector wedge product with itself is always 0
+					wedging a vector with itself equaling zero means the wedge product is anticommunative, ie you can't swap the order (like cross product)
+					proof
+						wedge two vectors added to each other
+							(a+b)^(a+b)				== 0
+							a^a + a^b + b^a + b^b	== 0
+							a^b + b^a				== 0
+												a^b == -b^a
+						VIDEO NOTE: if we start from saying we want this behavior, things make more sense -- we want the order to give us different directions for things like quat rotations, normal checking, etc.
+					this simple rule of wedging with self is zero, let's us derive the dot and cross product
+					the dot and cross product just fall out from having this rule
+	bivectors
+		bivector = vector ^ vector 
+		- bivector is two directions and a magnitude
+		- bivectors are distinct from scalars and vectors, they are a new entity
+		- represents a 2D area 
+			-(an oriented area)
+			NOTE:
+				vectors
+					- oriented 1D direction
+				scalars
+					-zero dimensional values
+		- order of multiplication matters, because the wedge product is anticommunitive (can't swap order)
+			first_v ^ second_v = -second_v ^ first_v
+	bivectors in 3d
+		start with 3 basis vectors, (ortho normal basis vectors)
+			e1, e2, and e3
+		a 3d vector is then
+			a1*e1 + a2*e2 + a3*e3
+
+		notiece what happens to basis vectors
+			------NOTE when making a video, rederive this so it is fresh, also check for a later note so we don't have to do more steps than necessary, but maybe we should leave that in ---
+			------VIDEO MAKING NOTE: can we use x, y, and z basis vectors to make this simpler to explain? note, this make the e23, e31, e12 notation harder, maybe basis_xy, basis_yz, basis_zx---------
+			a^b == (a1*e1 + a2*e2 + a3*e3) ^ (b1*e1 + b2*e2 + b3*e3)
+			//distribute the wedge product
+			a^b ==	  a1*e1 ^ b1*e1		
+					+ a1*e1 ^ b2*e2 
+					+ a1*e1 ^ b3*e3
+					+ a2*e2 ^ b1*e1
+					+ a2*e2 ^ b2*e2
+					+ a2*e2 ^ b3*e3
+					+ a3*e3 ^ b1*e1
+					+ a3*e3 ^ b2*e2
+					+ a3*e3 ^ b3*e3
+			//rearrange to see what vectors are being wedged together
+			a^b ==	  a1*b1 * e1 ^ e1	//wedge with self is 0
+					+ a1*b2 * e1 ^ e2 
+					+ a1*b3 * e1 ^ e3
+					+ a2*b1 * e2 ^ e1
+					+ a2*b2 * e2 ^ e2	//wedge with self is 0
+					+ a2*b3 * e2 ^ e3
+					+ a3*b1 * e3 ^ e1
+					+ a3*b2 * e3 ^ e2
+					+ a3*b3 * e3 ^ e3	//wedge with self is 0
+			//remove the zeros
+			a^b ==
+					+ a1*b2 * e1 ^ e2 
+					+ a1*b3 * e1 ^ e3
+					+ a2*b1 * e2 ^ e1	// (e2 ^ e1 == -e1 ^ e2)
+					+ a2*b3 * e2 ^ e3	
+					+ a3*b1 * e3 ^ e1	// (e3 ^ e1 == -e1 ^ e3)
+					+ a3*b2 * e3 ^ e2   // (e3 ^ e2 == -e2 ^ e3)
+			//convert these to be their negative flipped counterparts
+			a^b ==	///----NOTE:: WHEN MAKING VIDEO, CONSIDER NOT FLIPPING e3^e1, as that is a better one to use for later! It wraps around to e1 and we have to correct that at the end
+					+ a1*b2 * e1 ^ e2 
+					+ a1*b3 * e1 ^ e3
+					+ -a2*b1 * e1 ^ e2		// (e2 ^ e1 == -e1 ^ e2)
+					+ a2*b3 * e2 ^ e3	
+					+ -a3*b1 * e1 ^ e3		// (e3 ^ e1 == -e1 ^ e3)
+					+ -a3*b2 * e2 ^ e3		// (e3 ^ e2 == -e2 ^ e3)
+			//group these together
+			a^b ==
+					+ a1*b2 * e1 ^ e2 
+					+ -a2*b1 * e1 ^ e2	
+					+ a1*b3 * e1 ^ e3
+					+ -a3*b1 * e1 ^ e3	
+					+ a2*b3 * e2 ^ e3	
+					+ -a3*b2 * e2 ^ e3  
+			//arrange on the same line for clairty
+			a^b ==
+					+ a1*b2 * e1 ^ e2 - a2*b1 * e1 ^ e2	
+					+ a1*b3 * e1 ^ e3 - a3*b1 * e1 ^ e3	
+					+ a2*b3 * e2 ^ e3 - a3*b2 * e2 ^ e3  
+			//factor out the coefficients, to make this a bit more readable
+			a^b ==
+					+ (a1*b2 - a2*b1) * e1 ^ e2	
+					+ (a1*b3 - a3*b1) * e1 ^ e3	
+					+ (a2*b3 - a3*b2) * e2 ^ e3  
+			//let's rearrange the e1^e3, so it it wraps around, and is e3^e1, but this requires multiplying by a negative 1
+			a^b ==
+					+ (a1*b2 - a2*b1) * e1 ^ e2	
+					+ (a1*b3 - a3*b1) * -1*e3 ^ e1	
+					+ (a2*b3 - a3*b2) * e2 ^ e3  
+			//distribute the negative 1
+			a^b ==
+					+ (a1*b2  - a2*b1) * e1 ^ e2	
+					+ (-a1*b3 + a3*b1) * e3 ^ e1	
+					+ (a2*b3  - a3*b2) * e2 ^ e3  
+			//organize so it reads e1, e2, then e3
+			a^b ==
+					+ (a1*b2  + -a2*b1) * e1 ^ e2	
+					+ (a2*b3  + -a3*b2) * e2 ^ e3  
+					+ (-a1*b3 + a3*b1) * e3 ^ e1	
+			//rearrange the terms so we order them by which basis vector is missing
+			a^b ==
+					+ (a2*b3  + -a3*b2) * e2 ^ e3	//e1 is missing
+					+ (-a1*b3 + a3*b1) * e3 ^ e1	//e2 is missing
+					+ (a1*b2  + -a2*b1) * e1 ^ e2	//e3 is missing
+			//the coefficients are the values we use in the cross product!
+			//but we're expressing it on the "bivector basis" not on the "e1, e2, e3 basis"
+			//shorthand notation can be used , e2^e3==e23
+			a^b ==
+					+ (a2*b3  + -a3*b2) * e2 ^ e3	
+					+ (a3*b1  - a1*b3 ) * e3 ^ e1	//rearranged addition to make more sense
+					+ (a1*b2  + -a2*b1) * e1 ^ e2	
+		Cross Product VS Wedge Product
+			Cross Product
+				Cross product is not associative, 
+					((a x b) x c) != (a x (b x c))
+				-only 3d (well, kinda -- personally seen people make 2d crossproducts...)
+				-an "abuse" of the wedge product; does not convey what is happening behind the scenes
+			Wedge Product
+				Wedge product is associative
+					(a ^ b) ^ c == a ^ (b ^ c)
+				Wedge product is defined in -ALL- dimensions
+
+	trivectors
+		a ^ b ^ c
+		properites
+			-multiply 3 things together to get a trivector
+			-distinct from scalars, vectors, bivectors
+			-represents 3d ORIENTED volume
+		a ^ b ^ c
+			-you can wedge a bivector with a vector and get a trivector
+			-you can wedge 3 vectors to get a trivector
+		-in 3D a trivector only has 1 basis vectors
+			a ^ b ^ c = (a1b2c3 + a2b3c1 + a3b1c2 - a1b3c2 - a2b1c3 -a3b2c1) * (e1^e2^e3)
+				--- TODO do the algebra to proove these cancelations ---
+			the magnitude is det([a b c])
+		-why is there only 1 basis vector in 3d?
+			"there's only 1 way we can choose 3 vectors out of a set of 3 vectors"
+				-not sure what this means... (x,y,z)(z,x,y) are two ways... guess not?
+				-i guess it means, if we try to combine 3 vectors, and only have 3 vectors, then we have to use all our vectors to make a combination
+		-trivector looks like a regular scalar
+		-trivector aka "pseudoscalar" or "antiscalar"
+		-trivector's sign flips under reflection
+			-trivectors behave slightly differently than a scalar, because of this reflection sign flip
+		scalar triple product
+			scalar triple product (a x b) dot c 
+			scalar triple product gives same magnitude as trivector (a ^ b ^ c)
+				-but the trivector extends into higher dimensions
+					-but don't get a scalar in higher dimensions, we have to keep wedging things together to get a scalar
+	grading
+		grade - the number of things wedged together
+			scalars have grade 0
+			vectors have grade 1
+			bivectors have grade 2
+			trivectors have grade 3
+
+	3d multivector algebra 
+		the players:
+			1 scalar elements
+			3 vector elements
+			3 bivector elements
+			1 trivector elements
+		8 total mutlivector basis elements
+		no higher grade elements in 3d, because we have no other basis vectors to wedge together
+
+	multivectors in general dimension
+		-in n dimensions, number of basis k vector elements is (k here is like number of bivectors, number of trivectors)
+			n choose k (n!)/(k!*(n-k)!)
+				how many bivectors? n = 3, k = 2
+					(3 choose 2) == (3! / 2!*1! == (3*2*1)/(2*1) == 3 
+					(xy, yz, zx)
+				how many trivectors? n = 3, k = 3
+					(3 choose 3) == (3! / 3!*0!) == (3*2*1)/(3*2*1)(1) == 1
+					(xyz)
+				how many vectors? n=3, k=1
+					(3 choose 1) == (3!/ (1!*2!)) == (3*2*1)/(1*2*1) == 3 
+					(x,y,z)
+		-produces a nice symmetry
+		-total number of basis elements is always 2^n
+		Dimension		Grade Elements
+			1				1 1				//scalar antiscalar?
+			2				1 2 1			//scalar, vector, antiscalar
+			3				1 3 3 1			//1scalar, 3vectors, 3bivectors, 1trivector
+			4				1 4 6 4 1		//1scalar 4vectors, 6bivectors, 4trivectors, 1quadvector
+			5				1 5 10 10 5 1	//1 scalar, 5vectors, 10bivectors, 10trivectors, 5quadvectors, 1pent?vector
+	4 dimensions
+		basis vectors: e1,e2,e3,e4
+		basis bivectors (4 choose 2) = 6; {xy,xz,xw, yz, yw, zw}
+		basis trivectors (4 choose 3) = 4; {xyz, xyw, xzw, yzw}
+
+	confusion between vector and bivector
+		in 3d....
+			vectors have 3 components
+			bivectors have 3 components
+			...so vectors and bivectors look like the same thing
+				hence, why knowledge of the difference is not widespread
+		physicist noticed there was something different about the result of a crossproduct.
+			-cross product produced a different kind of vector
+			-cross product result transforms differently than a regular vector
+				-so physicist called xproduct result a "axial vector, pseudovetor, covector, covariant vector"
+				-physicist called regular vectors "polar vectors" or "contravariant vectors"
+			simple example
+				what happens to cross product result when you hit it with a simple reflection matrix (where 1 colum, say first, has a negated value)
+					M =(imagine identity matrix, where first column has -1 instead of 1; this is a relfection on x)
+					M = (-1,0,0)
+						( 0,1,0)
+						( 0,0,1)
+					(1,0,0) cross (0,1,0)		= (0,0, 1)
+					M*(1,0,0) cross M*(0,1,0)	= (0,0,-1)
+						not same as M*(0,0,1)	= (0,0, 1)
+
+
+
+		PICKUP at 18:22 explaining why crossproduct is different
+				NOTE: part where he gets to diagonal matrix with determinant -- the reason it is (M-1 * det(M)) is because it is essentially an identiy matrix that has been scaled by the determinant, an identy matrix is achieved when you do M*M-1
+
+
+
+		
