@@ -140,6 +140,7 @@ The Wedge Product
 					+ (a3*b1  - a1*b3 ) * e3 ^ e1	//rearranged addition to make more sense
 					+ (a1*b2  + -a2*b1) * e1 ^ e2	
 		Cross Product VS Wedge Product
+			--WEDGE PRODUCT IS NOT EXACTLY THE CROSS PRODUCT--
 			Cross Product
 				Cross product is not associative, 
 					((a x b) x c) != (a x (b x c))
@@ -148,6 +149,7 @@ The Wedge Product
 			Wedge Product
 				Wedge product is associative
 					(a ^ b) ^ c == a ^ (b ^ c)
+					(this example creates a trivector)
 				Wedge product is defined in -ALL- dimensions
 
 	trivectors
