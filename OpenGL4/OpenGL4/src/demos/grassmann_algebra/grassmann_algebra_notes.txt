@@ -54,9 +54,9 @@ The Wedge Product
 		a 3d vector is then
 			a1*e1 + a2*e2 + a3*e3
 
-		notiece what happens to basis vectors
-			------NOTE when making a video, rederive this so it is fresh, also check for a later note so we don't have to do more steps than necessary, but maybe we should leave that in ---
-			------VIDEO MAKING NOTE: can we use x, y, and z basis vectors to make this simpler to explain? note, this make the e23, e31, e12 notation harder, maybe basis_xy, basis_yz, basis_zx---------
+		notice what happens to basis vectors
+			------NOTE when making a video, rederive this before making video so it is fresh, also check for a later note so we don't have to do more steps than necessary, but maybe we should leave that in ---
+			------VIDEO MAKING NOTE: can we use x, y, and z basis vectors to make this simpler to explain? note, this make the e23, e31, e12 notation harder, maybe basis_xy, basis_yz, basis_zx, or just xy, yz, zx? ---------
 			a^b == (a1*e1 + a2*e2 + a3*e3) ^ (b1*e1 + b2*e2 + b3*e3)
 			//distribute the wedge product
 			a^b ==	  a1*e1 ^ b1*e1		
@@ -163,7 +163,9 @@ The Wedge Product
 			-you can wedge 3 vectors to get a trivector
 		-in 3D a trivector only has 1 basis vectors
 			a ^ b ^ c = (a1b2c3 + a2b3c1 + a3b1c2 - a1b3c2 - a2b1c3 -a3b2c1) * (e1^e2^e3)
+-------------------------------------------------
 				--- TODO do the algebra to proove these cancelations ---
+-------------------------------------------------
 			the magnitude is det([a b c])
 		-why is there only 1 basis vector in 3d?
 			"there's only 1 way we can choose 3 vectors out of a set of 3 vectors"
@@ -236,15 +238,162 @@ The Wedge Product
 					M = (-1,0,0)
 						( 0,1,0)
 						( 0,0,1)
-					(1,0,0) cross (0,1,0)		= (0,0, 1)
-					M*(1,0,0) cross M*(0,1,0)	= (0,0,-1)
-						not same as M*(0,0,1)	= (0,0, 1)
-
-
-
-		PICKUP at 18:22 explaining why crossproduct is different
-				NOTE: part where he gets to diagonal matrix with determinant -- the reason it is (M-1 * det(M)) is because it is essentially an identiy matrix that has been scaled by the determinant, an identy matrix is achieved when you do M*M-1
-
+					(1,0,0) cross (0,1,0)		= (0,0, 1)		//crossing x axis with y axis, we get the z axis as a result
+					M*(1,0,0) cross M*(0,1,0)	= (0,0,-1)		//transform x&y axis by matrix that flips x, we get a flipped z
+						not same as M*(0,0,1)	= (0,0, 1)		//if we just transform z axis by the same matrix (flipped x) we do not get the same result as above
+				So, if you transform the crossproduct-input vectors before hand, you don't get the same result as transforming the crossproduct result.
+					M(a1*e1 + a2*e2 +a3*e3) = a1*M1 + a2*M2 +a3*M3		//because the e1,e2,and e3 are the unit basis vectors, so like multipliying by 1. ; or just expand and do the multiplication
+					Apply M transform before cross producting two vectors
+						Ma cross Mb =
+							(a1*M1 + a2*M2 + a3*M3) cross (b1*M1 + b2*M2 + b3*M3)	//by rule M(a1*e1 + a2*e2 +a3*e3) = a1*M1 + a2*M2 +a3*M3
+					Distribute cross product
+						Ma cross Mb =
+								a1*M1 cross b1*M1  		//M1 cross M1 == 0
+								+ a1*M1 cross b2*M2
+								+ a1*M1 cross b3*M3
+								+ a2*M2 cross b1*M1
+								+ a2*M2 cross b2*M2 	//M2 cross M2 == 0
+								+ a2*M2 cross b3*M3
+								+ a3*M3 cross b1*M1
+								+ a3*M3 cross b2*M2
+								+ a3*M3 cross b3*M3		//M3 cross M3 == 0
+					Removed the cross products that zero out
+						Ma cross Mb =
+								+ a1*M1 cross b2*M2		
+								+ a1*M1 cross b3*M3
+								+ a2*M2 cross b1*M1		// M2 cross M1 == -M1 cross M2;  reorganize so it goes subscript counts up
+								+ a2*M2 cross b3*M3
+								+ a3*M3 cross b1*M1		// M3 cross M1 == -M1 cross M3;	NOTE: you can convince yourself of this by pretending M1=x, M2=y, M3=z and doing right hand rule 	VIDEO NOTE: it is better to do M3 to M1,
+								+ a3*M3 cross b2*M2		// M3 cross M2 == -M2 cross M3
+					Convert the cross products to like terms (comments above)
+						Ma cross Mb =
+								+ a1*M1 cross b2*M2	+ (-b1*M1 cross a2*M2)		
+								+ a1*M1 cross b3*M3	+ (-b1*M1 cross a3*M3)
+								+ a2*M2 cross b3*M3 + (-b2*M2 cross a3*M3)
+					Factor out coefficients (VIDEO: SANITY CHECK -- IS THIS A LEGAL OPERATION?)
+						Ma cross Mb =
+								+ a1*b2(M1 cross M2) + -b1*a2(M1 cross M2)		
+								+ a1*b3(M1 cross M3) + -b1*a3(M1 cross M3)
+								+ a2*b3(M2 cross M3) + -b2*a3(M2 cross M3)
+					Group coefficents
+						Ma cross Mb =
+								+ (a1*b2 -b1*a2)(M1 cross M2)
+								+ (a1*b3 -b1*a3)(M1 cross M3) 	//(M1 cross M3) == (-M3 cross M1)
+								+ (a2*b3 -b2*a3)(M2 cross M3)
+					Convert M1 cross M3 to M3 cross M1 to do cyclic nature of basis vectors
+						Ma cross Mb =
+								+ (a1*b2 -b1*a2)(M1 cross M2)
+								+ (a1*b3 -b1*a3)(-M3 cross M1)	//distribute -1
+								+ (a2*b3 -b2*a3)(M2 cross M3)
+					Distribute -1
+						Ma cross Mb =
+								+ (a1*b2 -b1*a2)(M1 cross M2)
+								+ (-a1*b3 +b1*a3)(M3 cross M1)
+								+ (a2*b3 -b2*a3)(M2 cross M3)
+					Reorganize ordering of M2, M3, and M1 to match video
+						Ma cross Mb =
+								+ (a2*b3 -b2*a3)(M2 cross M3)
+								+ (-a1*b3 +b1*a3)(M3 cross M1)
+								+ (a1*b2 -b1*a2)(M1 cross M2)
+					Flip -a1*b3 +b1*a3 to b1*a3 -a1*b3 
+						Ma cross Mb =
+								+ (a2*b3 -b2*a3)(M2 cross M3)
+								+ (b1*a3 -a1*b3)(M3 cross M1)
+								+ (a1*b2 -b1*a2)(M1 cross M2)
+					Make it so that `a` always comes before `b` in coefficients
+						Ma cross Mb =
+								+ (a2*b3 -a3*b2)(M2 X M3)
+								+ (a3*b1 -a1*b3)(M3 X M1)
+								+ (a1*b2 -a2*b1)(M1 X M2)
+				So, if we take these basis vectors, and dot it with the one we're missing. We end up with the determinant of M
+					-this is doing the scalar triple product, which gives the determinent of a matrix
+						(M2 cross M3) dot (M1)	= Det(M)
+						(M3 cross M1) dot (M2)	= Det(M) 
+						(M1 cross M2) dot (M3)	= Det(M)
+				If we write this in matrix form, we will get a an identity matrix that has been multiplied by determinant of M
+					Below is doing the scalar triple product above, but using matrix machinery to do it
+					cross products are rows
+					the reason for 0s in the matrix can be seen from circular shift property of scalar triple product:((M2 cross M3) dot M3) == ((M3 cross M3) dot M2), ALT EXAMPLE: ((M2 X M3) dot M2 == M3 dot (M2 X M2)
+						|M2 X M3|  	|M1x M2x M3x|	|det(M)	0			0 |
+						|M3 X M1| * |M1y M2y M3y| = |0		det(M)		0 |
+						|M1 X M2|	|M1z M2z M3z|	|0		0		det(M)|
+					looking at this in a more collapsed form, ask yourself what must the left hand side be? ie what must is the thing we're multiplying by M be?
+							|M2 X M3|  	     |det(M)	0			0 |
+							|M3 X M1| * M  = |0			det(M)		0 |
+							|M1 X M2|		 |0			0		det(M)|
+						Well, the RESULT looks like an idenity matrix scaled by the determinant.
+							det(M)*I
+						Identity matrix is achieved when we do  (M-1 is inverse)
+							(M-1)*M
+						so this must be true
+							|M2 X M3|  	
+							|M3 X M1|  == det(M)*(M-1)
+							|M1 X M2|		
+						for us to get
+							det(M)(M-1)*(M) == diagonal_matrix(det(M))					
+				THEREFORE
+					all of this work tells us this:
+						-the correct matrix to multiply to transform result of cross product (eg transforming normals) 	`det(m)transpose(M-1)` for column matrices
+						-after transposing to math works out, we get det(M)*tranpose(M-1) as the transform matrix.
+					why?
+						(I) we solved what `Ma cross Mb` was equal to
+							Ma X Mb =	+ (a2*b3 -a3*b2)(M2 X M3)
+										+ (a3*b1 -a1*b3)(M3 X M1)
+										+ (a1*b2 -a2*b1)(M1 X M2)
+						(II) We found that this was true
+							|M2 X M3|  	
+							|M3 X M1|  == det(M)*(M-1)
+							|M1 X M2|		
+						(III) We can view (I) as matrix * vector multiplication (vector is the operand with a,b coefficients
+							-note: it helps to use subsitution to prove this out
+																				column mat    column vec
+								Ma X Mb =	+ (a2*b3 -a3*b2)(M2 X M3)		=	|M2, M3, M1|  |a2*b3 -a3*b2|	
+											+ (a3*b1 -a1*b3)(M3 X M1)			|x	 x    x| *|a3*b1 -a1*b3|	
+											+ (a1*b2 -a2*b1)(M1 X M2)			|M3  M1  M2|  |a1*b2 -a2*b1|	
+							substitution helps us see this is true
+								Ma X Mb = 	|M23x,R31x, O12x|  |q|		|q*m23x + p*r31x, s*O12x|
+											|M23y,R31y, O12y| *|p|	=	|q*m23y + p*r31y, s*O12y|
+											|M23z,R13z, O12z|  |s|		|q*m23y + p*r31y, s*O12y|
+						(IV) this means we need to transpose our dervied result too
+							notice we had to transpose this to make the dot products work out and match what we solved for
+								|M2 X M3|  	 |M2, M3, M1|
+								|M3 X M1| to |x	 x    x |
+								|M1 X M2|	 |M3  M1  M2|	
+							so
+								det(M)*(M-1) ======> det(m)transpose(M-1)
+						(V) we can substitue tranpose(IV) into (III); still matrix * vector multiplication
+										column mat					column vec
+							Ma X Mb =	det(m)transpose(M-1) 		[a2*b3 -a3*b2,
+																*  	 a3*b1 -a1*b3,
+														 	 		 a1*b2 -a2*b1]
+					Special Cases
+						-when M orthogonal, trans(m-1) == m
+							-this means we don't always have to go through all the work in all cases
+							-but with non-uniform scales and shears, we need to use this derived matrix we found
+						-if det is positive, and you don't care about length, det can be left out from matrix that transforms result of crossproducts
+						-det*inverse(transpose) = adjugate tranpose
+					Why does cross product require special transform matrix?
+						cross product does not produce vector, it produces a bivector
+						bivectors don't behave like vectors
+							they are on a different basis than vectors
+					We are transforming normal vectors in correctly when doing nonuniform scales.
+						-normal = cross(triEdge1, triEdge2)
+							-this is a bivector
+							-we need to transform it like a bivector (the cross product stuff we ust figured out above)
+						-we're just getting lucky, because we normalize after and only care that the dot product is still zero
+							-non-uniform scales move normals so they are not perpendicular
+							-classic knowledg is to use inverse transpose
+								derivation (* in this case is dot product)
+									0 = N*T
+									0 = U*N*M*T					//u is unknown matrix
+									0 = trans(N)*trans(U)*M*T	//trans(AB) = trans(B)trans(A) //from linear algebra
+										trans(U) = inv(M)		//look, trans(U) must be inverse of M
+										U = trans(inv(m))		/solve for U to figure out what we multiply N by
+								this misses extra factor of det(M)											
+									-doesn't work if reflection or scaling going on
+									-really just preserving 0 dot product
+---------------------------------
+PICKUP AT 26:04
 
 
 		
