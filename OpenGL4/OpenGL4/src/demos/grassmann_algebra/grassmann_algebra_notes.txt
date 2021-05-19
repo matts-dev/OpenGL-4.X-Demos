@@ -238,12 +238,12 @@ The Wedge Product
 					M = (-1,0,0)
 						( 0,1,0)
 						( 0,0,1)
-					(1,0,0) cross (0,1,0)		= (0,0, 1)		//crossing x axis with y axis, we get the z axis as a result
-					M*(1,0,0) cross M*(0,1,0)	= (0,0,-1)		//transform x&y axis by matrix that flips x, we get a flipped z
-						not same as M*(0,0,1)	= (0,0, 1)		//if we just transform z axis by the same matrix (flipped x) we do not get the same result as above
+					(1,0,0) cross (0,1,0)		= (0,0, 1)					//crossing x axis with y axis, we get the z axis as a result
+					M*(1,0,0) cross M*(0,1,0)	= (0,0,-1)					//transform x&y axis by matrix that flips x, we get a flipped z
+						not same as M*(0,0,1)	= (0,0, 1)					//if we just transform z axis by the same matrix (flipped x) we do not get the same result as above
 				So, if you transform the crossproduct-input vectors before hand, you don't get the same result as transforming the crossproduct result.
-					M(a1*e1 + a2*e2 +a3*e3) = a1*M1 + a2*M2 +a3*M3		//because the e1,e2,and e3 are the unit basis vectors, so like multipliying by 1. ; or just expand and do the multiplication
-					Apply M transform before cross producting two vectors
+					M(a1*e1 + a2*e2 +a3*e3) = a1*M1 + a2*M2 +a3*M3			//because the e1,e2,and e3 are the unit basis vectors, so like multipliying by 1. ; or just expand and do the multiplication
+					Apply M transform before cross producting two vectors 	//(this shows us what should be how to calculate the correct answer)
 						Ma cross Mb =
 							(a1*M1 + a2*M2 + a3*M3) cross (b1*M1 + b2*M2 + b3*M3)	//by rule M(a1*e1 + a2*e2 +a3*e3) = a1*M1 + a2*M2 +a3*M3
 					Distribute cross product
@@ -354,7 +354,7 @@ The Wedge Product
 								Ma X Mb = 	|M23x,R31x, O12x|  |q|		|q*m23x + p*r31x, s*O12x|
 											|M23y,R31y, O12y| *|p|	=	|q*m23y + p*r31y, s*O12y|
 											|M23z,R13z, O12z|  |s|		|q*m23y + p*r31y, s*O12y|
-						(IV) this means we need to transpose our dervied result too
+						(IV) because we had to transpose rows to column mat -- for math to work out -- this means we need to transpose our dervied result too
 							notice we had to transpose this to make the dot products work out and match what we solved for
 								|M2 X M3|  	 |M2, M3, M1|
 								|M3 X M1| to |x	 x    x |
@@ -366,6 +366,7 @@ The Wedge Product
 							Ma X Mb =	det(m)transpose(M-1) 		[a2*b3 -a3*b2,
 																*  	 a3*b1 -a1*b3,
 														 	 		 a1*b2 -a2*b1]
+						(VI) we now know a matrix we can multiply by to transform cross products by that will result correctly. det(M)*trans(inv(m))
 					Special Cases
 						-when M orthogonal, trans(m-1) == m
 							-this means we don't always have to go through all the work in all cases
@@ -392,8 +393,94 @@ The Wedge Product
 								this misses extra factor of det(M)											
 									-doesn't work if reflection or scaling going on
 									-really just preserving 0 dot product
+	continuing confusion between vector and bivector (25:04)
+		reason why vectors and bivectors look the same in 3d (not 4d)
+			the 1vectors
+				-only use 1 basis vectorrs
+				-have 3 components
+			the (n-1) vectors
+				-use all but 1 basis vector
+				-have 3 components in 3d
+			ANTIVECTOR
+				the 1vectors and (n-1)vectors are complementary
+					-hence the name "antivector" for (n-1)vectors
+		convention for writing bars on basis vector, eg _e1 is everything except e1.
+			(not from the book, a bar above means the right complement, for me e1_ = right complement(top bar), _e1 = left complement(bottom bar))
+			-from the book, you can swap positions of wedge but you have to negate, I don't recall if this is true for all grade systems or only odd grade systems (eg 3d or 4d)
+				NOTE: this is grade4, even grade
+					-wedge always anticommutes (page 139) (anticommute means flip to negative sign when reversing order), this changes when wedging things of different grades (pg145)
+					-antiwedge anticommutes on even grades pg:156)
+			ei*ei_ = e1^e2^e3^e4  
+				e1_ = e2 ^ e3 ^ e4		(e1^e2^e3^e4)
+				e2_ = e1 ^ e4 ^ e3		(e2^e1^e4^e3) => (-e1^e2^e4^e3)=>(-e1^e2^-e3^e4)=>(--e1^e2^e3^e4)=>(e1^e2^e3^e4)
+				e3_ = e1 ^ e2 ^ e3		(e3^e1^e2^e4) => (-e1^e3^e2^e4)=>(-e1^-e2^e3^e4)=>(--e1^e2^e3^e4)=>(e1^e2^e3^e4)
+				e4_ = e1 ^ e3 ^ e2		(e4^e1^e3^e2) => (-e1^e4^e3^e2)=>(-e1^e4^-e2^e3)=>(-e1^-e2^-e4^e3)=>(-e1^-e2^--e3^e4)=>(----e1^e2^e3^e4)=>(e1^e2^e3^e4)
+					VIDEO NOTE: it is important to clarify that these swapping rules are from the antiassociativity rule
+						-todo: is it trivial to show that?
+						-todo: is it true for 4d in addition 3d, or is it a case of odd grade behaves differently?
+	Vector Antivector Product (THE ORIGIN OF THE DOT PRODUCT)
+		-VIDEO NOTE: this would probably be a cool hook, the dot product is the result of a "multiplication-like" operation between a vector and an antivector
+		vector^antivector 
+			3d = vector^bivector
+			4d = vector^trivector (table on page 147 of book)
+		dot product coefficient
+			-vector ^ antivector == dot product
+			-vector antivector complement each other 
+			-vector antivector "fill" in the volume element
+			-dot product gives a ANTISCALAR/PSEUDOSCALAR
+			(a1e1 + a2e2 + a3e3) ^ (b1e1_ + b2e2_ + b3e3_) = (a1b1 + a2b2 +a3b3)(e1^e2^e3)
+		deriving the dot product
+			//distribute the wedge product 
+			(a1e1 + a2e2 + a3e3) ^ (b1e1_ + b2e2_ + b3e3_) =
+				+ a1e1 ^ b1e1_
+				+ a1e1 ^ b2e2_
+				+ a1e1 ^ b3e3_
+				+ a2e2 ^ b1e1_
+				+ a2e2 ^ b2e2_
+				+ a2e2 ^ b3e3_
+				+ a3e3 ^ b1e1_
+				+ a3e3 ^ b2e2_
+				+ a3e3 ^ b3e3_
+			//expand the definition of the antivector basis so they're defined in terms of normal basis and not antibasis
+			//this is from pg 149, where we show what things like e1_=, e2_= e3_= e4_=
+				e1_ = e2^e3 = e23
+				e2_ = e3^e1 = e31
+				e3_ = e1^e2 = e12
+			//note above matches crossproduct intuition of crossing xy=z, yz=x, zx=y
+				(a1e1 + a2e2 + a3e3) ^ (b1e1_ + b2e2_ + b3e3_) =
+					+ a1e1 ^ b1(e2^e3)
+					+ a1e1 ^ b2(e3^e1)
+					+ a1e1 ^ b3(e1^e2)
+					+ a2e2 ^ b1(e2^e3)
+					+ a2e2 ^ b2(e3^e1)
+					+ a2e2 ^ b3(e1^e2)
+					+ a3e3 ^ b1(e2^e3)
+					+ a3e3 ^ b2(e3^e1)
+					+ a3e3 ^ b3(e1^e2)
+			//distribute coefficients to front
+				(a1e1 + a2e2 + a3e3) ^ (b1e1_ + b2e2_ + b3e3_) =
+					+ a1b1(e1^e2^e3)	
+					+ a1b2(e1^e3^e1)	//e1^e1==0 (can swap_negate to get here, (e1^e3^e1)=>(-e3^e1^e1)
+					+ a1b3(e1^e1^e2)	//e1^e1==0
+					+ a2b1(e2^e2^e3)	//e2^e2==0
+					+ a2b2(e2^e3^e1)
+					+ a2b3(e2^e1^e2)	//e2^e2==0
+					+ a3b1(e3^e2^e3)	//e3^e3==0
+					+ a3b2(e3^e3^e1)	//e3^e3==0
+					+ a3b3(e3^e1^e2)
+			//remove zeros
+				(a1e1 + a2e2 + a3e3) ^ (b1e1_ + b2e2_ + b3e3_) =
+					+ a1b1(e1^e2^e3)	
+					+ a2b2(e2^e3^e1)	//(e2^e3^e1)=>(e2^-e1^e3)=>(--e1^e2^e3)=>(e1^e2^e3)	
+					+ a3b3(e3^e1^e2)	//(e3^e1^e2)=>(-e1^e3^e2)=>(--e1^e2^e3)=>(e1^e2^e3)	
+			//rearrnage terms so wedges all look teh same (see comments above)
+				(a1e1 + a2e2 + a3e3) ^ (b1e1_ + b2e2_ + b3e3_) =
+					+ a1b1(e1^e2^e3)	
+					+ a2b2(e1^e2^e3)
+					+ a3b3(e1^e2^e3)
+	
 ---------------------------------
-PICKUP AT 26:04
+PICKUP AT ~29:25
 
 
 		
