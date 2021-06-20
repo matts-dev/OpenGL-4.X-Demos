@@ -413,7 +413,7 @@ The Wedge Product
 			ei*ei_ = e1^e2^e3^e4  
 				e1_ = e2 ^ e3 ^ e4		(e1^e2^e3^e4)
 				e2_ = e1 ^ e4 ^ e3		(e2^e1^e4^e3) => (-e1^e2^e4^e3)=>(-e1^e2^-e3^e4)=>(--e1^e2^e3^e4)=>(e1^e2^e3^e4)
-				e3_ = e1 ^ e2 ^ e3		(e3^e1^e2^e4) => (-e1^e3^e2^e4)=>(-e1^-e2^e3^e4)=>(--e1^e2^e3^e4)=>(e1^e2^e3^e4)
+				e3_ = e1 ^ e2 ^ e4		(e3^e1^e2^e4) => (-e1^e3^e2^e4)=>(-e1^-e2^e3^e4)=>(--e1^e2^e3^e4)=>(e1^e2^e3^e4)
 				e4_ = e1 ^ e3 ^ e2		(e4^e1^e3^e2) => (-e1^e4^e3^e2)=>(-e1^e4^-e2^e3)=>(-e1^-e2^-e4^e3)=>(-e1^-e2^--e3^e4)=>(----e1^e2^e3^e4)=>(e1^e2^e3^e4)
 					VIDEO NOTE: it is important to clarify that these swapping rules are from the antiassociativity rule
 						-todo: is it trivial to show that?
@@ -443,9 +443,9 @@ The Wedge Product
 				+ a3e3 ^ b3e3_
 			//expand the definition of the antivector basis so they're defined in terms of normal basis and not antibasis
 			//this is from pg 149, where we show what things like e1_=, e2_= e3_= e4_=
-				e1_ = e2^e3 = e23
-				e2_ = e3^e1 = e31
-				e3_ = e1^e2 = e12
+									e1_ = e2^e3 = e23
+									e2_ = e3^e1 = e31
+									e3_ = e1^e2 = e12
 			//note above matches crossproduct intuition of crossing xy=z, yz=x, zx=y
 				(a1e1 + a2e2 + a3e3) ^ (b1e1_ + b2e2_ + b3e3_) =
 					+ a1e1 ^ b1(e2^e3)
@@ -478,9 +478,658 @@ The Wedge Product
 					+ a1b1(e1^e2^e3)	
 					+ a2b2(e1^e2^e3)
 					+ a3b3(e1^e2^e3)
+		dot product viewed as vector^antivector	
+			N dot L
+				N is an antivector (created from crossing two vectors?)
+				L is a vector
+				calculates volume of extruded bivector
+					-we multipling a plane-like (bivector/antivector) by a vector direction, making a volume
+				-this gives us an antiscalar result
+					-this means proper way to transform it is slightly different
+					-normals transform with det(M)(transpose(M-1)) (see cross product work above to refresh this)
+						(detM)M**(-t)N dot ML
+						N**(T)(detM)M^(-1) ML			//flip N and M, N now row vector, but have to flip M(-T) for result to be same
+						(detM)N dotL					//cancel out M(-1)*M
+
+The Antiwedge product (regressive product) (v)
+	- AKA regressive product
+	- symmetric to wedge product
+	- operates on antivectors (similar to how wedge operates on vectors)
+		- antiwedge product -takes antivectors to produce smaller things	
+			-decreases grade
+		- wedge product 	-takes vectors to produce larger things (bivectors, etc)
+			-increases grade
+	-does things in reverse of the wedge product
+	-example notation
+		e1_ v e2_
+	-same properties as wedge product
+	-operates on complementary basis, ie the "antibasis"
+		-completmentary space
+		-works on e_ instead of e
+	-reduces grade
+		example:
+			A = grade r
+			B = grade s
+			A^B = grade r + s
+			AvB = grade n - (n-r) - (n-s) == grade (r+s-n) //distribute negative and cancel terms
+		might be useful to think of antivectors as having grade -1
+		3d example 1:
+			A=grade2 (bivector)
+			B=grade2 (bivector)
+			AvB = (2+2) - 3 = 1 == regular vector
+	-thinking about antiwedge
+			e1_ v e2_ = e3
+			e2_ v e3_ = e1
+			e3_ v e1_ = e2
+		-this is similar to how we can do `e1^e2=e3_`
+		-I think it is better to think about them like wedge, 
+			"what is the group of antibasis we have antiwedged together"
+			shorthand notation
+				e12_ = e1_ v e2_
+				e23_ = e2_ v e3_
+				e31_ = e3_ v e1_
+				e123_ = e1_ v e2_ v e3_
+		-but you can think about this in the normal basis too
+				e1_ v e2_ = (e2 ^ e3) v (e3 ^ e1) = e3
+				e2_ v e3_ = (e3 ^ e1) v (e1 ^ e2) = e1
+				e3_ v e1_ = (e1 ^ e2) v (e2 ^ e3) = e2
+			-above, can be said:
+				"antiwedge keeps only what is in both antivectors"
+					-perhaps this isn't quite right, but that is what I see above
+					-notice the same basis vectors are close to the 'v' operator. 
+			----------------------------
+					TODO
+					-i'm not sure if they need to straddle this ????? 
+			----------------------------
+	JOIN AND MEET
+		join operation
+			-wedge product joins vectors together
+			-analogous to union
+		meet operation
+			-antiwege product "joins" antivectors
+			-antivectors represent ABSENCE of geometry
+			-joining antivectors is like removing vectors (antivectors are like, all the vectors nto included)
+			-analogous to intersection
+			-called "meet" operation specifically
+		wedge product builds things up, 
+			-you get things that span more dimensions
+		antiwedge works like intersections
+			-you take big things like planes or volumes,
+			-you antiwedge them together to get smaller things
+				-where those things intersect
+
+Homogenous Coordinates
+	-4 dimension
+	-point = (x,y,z,w)	
+	-allows affine transformations through a 4x4 matrix (ie the translation down side, rotation/scale in middle)
+	-Homogenous used throught computer graphics
+	-projection matrices used homogenous coordinates very heavily
+
+Homogenous Points
+	point_4d = (x,y,z,w)
+	point_3d = (x,y,z) / w
+		-this projects 4d vector onto 3d subspace where w = 1
+			(intersection of 4d vector with the plane where w = 1)
+
+Homogenous Model
+	grassman algebra extends homogenous model to included
+		3d Points
+		3d lines
+		3d planes
+	wedge and antiwedge products perform union and intersection opertions among all of these
+		eg (examples not from video but from memory, verify later)
+			?point wedge point = line
+			?point wedge point wdge point = plane
+			?plane antiwedge plane = line intersection
 	
+4D Grassman Algebra Review
+	components 
+		1 scalar unit		
+		4 vectors			e1, e2, e3, e4
+		6 biveectors 		e12, e23, e31, e41, e42, e43
+		4 antivectors 		e1_, e2_, e3_, e4_
+		1 antiscalar		
+
+Homogeneous Lines
+	-take wedge product of two lines
+	two point example			(w set to 1 to simplify)
+		P = (Px, Py, Pz, 1) 	= PxE1 + PyE2 + PzE3 + E4
+		Q = (Qx, Qy, Qz, 1) 	= QxE1 + QyE2 + QzE3 + E4
+
+	P wedge Q = 
+		+(Qx - Px)* e41
+		+(Qy - Py)* e42
+		+(Qz - Pz)* e43
+		+(PyQz - PzQy)* e23
+		+(PzQx - PxQz)* e31
+		+(PxQy - PyQx)* e12
+	w=1 derivation
+		P ^ Q = (PxE1 + PyE2 + PzE3 + E4) ^	(QxE1 + QyE2 + QzE3 + E4)
+		P ^ Q =
+			+ PxE1 ^ QxE1
+			+ PxE1 ^ QyE2
+			+ PxE1 ^ QzE3
+			+ PxE1 ^ E4
+
+			+ PyE2 ^ QxE1
+			+ PyE2 ^ QyE2
+			+ PyE2 ^ QzE3
+			+ PyE2 ^ E4
+
+			+ PzE3 ^ QxE1
+			+ PzE3 ^ QyE2
+			+ PzE3 ^ QzE3
+			+ PzE3 ^ E4
+
+			+ E4 ^ QxE1
+			+ E4 ^ QyE2
+			+ E4 ^ QzE3
+			+ E4 ^ E4
+		//cancel out self cancelations (E1^E1 = 0)
+		P ^ Q =
+			+ PxE1 ^ QxE1 //0
+			+ PxE1 ^ QyE2
+			+ PxE1 ^ QzE3
+			+ PxE1 ^ E4
+
+			+ PyE2 ^ QxE1
+			+ PyE2 ^ QyE2 //0
+			+ PyE2 ^ QzE3
+			+ PyE2 ^ E4
+
+			+ PzE3 ^ QxE1
+			+ PzE3 ^ QyE2
+			+ PzE3 ^ QzE3 //0
+			+ PzE3 ^ E4
+
+			+ E4 ^ QxE1
+			+ E4 ^ QyE2
+			+ E4 ^ QzE3
+			+ E4 ^ E4	//0
+		// group basis
+		P ^ Q =
+			+ PxE1 ^ QyE2		
+			+ PxE1 ^ QzE3		
+			+ PxE1 ^ E4
+
+			+ PyE2 ^ QxE1	
+			+ PyE2 ^ QzE3
+			+ PyE2 ^ E4
+
+			+ PzE3 ^ QxE1
+			+ PzE3 ^ QyE2
+			+ PzE3 ^ E4
+
+			+ E4 ^ QxE1
+			+ E4 ^ QyE2
+			+ E4 ^ QzE3
+		//reorganize orders of e1e2 to reduce pairings
+		P ^ Q =
+			+ PxQy 	E12		
+			+ PxQz 	E13		//flip for xproduct portion of line
+			+ Px 	E14		//flip for vector
+
+			+ PyQx 	E21		//flip for xproduct portion of line
+			+ PyQz 	E23		
+			+ Py 	E24		//flip for vector
+
+			+ PzQx 	E31
+			+ PzQy 	E32		//flip for xproduct portion of line
+			+ Pz   	E34		//flip for vector
+
+			+ Qx E41
+			+ Qy E42
+			+ Qz E43
+		//start flipping ordering (which requires negating) so that we end up with an ordering similar to the insightful ending
+		P ^ Q =
+			+ PxQy 	E12		
+			- PxQz 	E31		
+			- Px 	E41
+
+			- PyQx 	E12	
+			+ PyQz 	E23
+			- Py 	E42
+
+			+ PzQx 	E31
+			- PzQy 	E23
+			- Pz   	E43
+
+			+ Qx E41
+			+ Qy E42
+			+ Qz E43
+		//arrange to reveal a vector and a crossproduct
+		P ^ Q =
+			+ PyQz 	E23
+			- PzQy 	E23
+			+ PzQx 	E31
+			- PxQz 	E31
+			+ PxQy 	E12		
+			- PyQx 	E12	
+			+ Qx 	E41
+			- Px 	E41
+			+ Qy 	E42
+			- Py 	E42
+			+ Qz	E43
+			- Pz   	E43
+
+		//group into the line
+			P ^ Q =
+			+ (PyQz- PzQy) E23
+			+ (PzQx -PxQz) E31
+			+ (PxQy -PyQx) E12		
+
+			+ (Qx -Px) 	E41
+			+ (Qy -Py) 	E42
+			+ (Qz -Pz)	E43
+
+	Derive without W=1, but then substitute in W=1
+		P ^ Q = (PxE1 + PyE2 + PzE3 + PwE4) ^ (QxE1 + QyE2 + QzE3 + QwE4)
+		//clear out zero multiplies
+		P ^ Q =
+			+ PxE1 ^ QxE1		//e1^e1 == 0
+			+ PxE1 ^ QyE2
+			+ PxE1 ^ QzE3
+			+ PxE1 ^ QwE4
+
+			+ PyE2 ^ QxE1
+			+ PyE2 ^ QyE2		//e2^e2 == 0
+			+ PyE2 ^ QzE3
+			+ PyE2 ^ QwE4
+
+			+ PzE3 ^ QxE1
+			+ PzE3 ^ QyE2
+			+ PzE3 ^ QzE3		//e3^e3 == 0
+			+ PzE3 ^ QwE4
+
+			+ PwE4 ^ QxE1
+			+ PwE4 ^ QyE2
+			+ PwE4 ^ QzE3
+			+ PwE4 ^ QwE4		//e4^e4==0
+		//factor out scalars from wedge prodcuts
+		P ^ Q =
+			+ PxQy E1^E2
+			+ PxQz E1^E3
+			+ PxQw E1^E4
+
+			+ PyQx E2^E1
+			+ PyQz E2^E3
+			+ PyQw E2^E4
+
+			+ PzQx E3^E1
+			+ PzQy E3^E2
+			+ PzQw E3^E4
+
+			+ PwQx E4^E1
+			+ PwQy E4^E2
+			+ PwQz E4^E3
+		// start flipping things around so we can get a cross product (M) and a vector (T) when W = 1 (see ending result when W=1 to see which E12 orderings are conventient)
+		P ^ Q =
+			+ PxQy E1^E2
+			+ PxQz E1^E3	//flip M
+			+ PxQw E1^E4	//flip for T
+
+			+ PyQx E2^E1	//flip M
+			+ PyQz E2^E3
+			+ PyQw E2^E4	//flip for T
+
+			+ PzQx E3^E1
+			+ PzQy E3^E2	//flip M
+			+ PzQw E3^E4	//flip for T
+			
+			+ PwQx E4^E1
+			+ PwQy E4^E2
+			+ PwQz E4^E3 
+		P ^ Q =
+			+ PxQy E12
+			- PxQz E31	
+			- PxQw E41	
+
+			- PyQx E12	
+			+ PyQz E23
+			- PyQw E42	
+
+			+ PzQx E31
+			- PzQy E23	
+			- PzQw E43	
+
+			+ PwQx E41
+			+ PwQy E42
+			+ PwQz E43 
+		// pair up related basis
+		P ^ Q =
+			+ PxQy E12
+			- PyQx E12	
+
+			+ PwQx E41
+			- PxQw E41	
+
+			+ PyQz E23
+			- PzQy E23	
+
+			+ PwQy E42
+			- PyQw E42	
+
+			+ PzQx E31
+			- PxQz E31	
+
+			+ PwQz E43 
+			- PzQw E43	
+		//factor out coeffiecients
+		P ^ Q =
+			+ (PxQy - PyQx) E12	
+			+ (PwQx - PxQw) E41	
+			+ (PyQz - PzQy) E23	
+			+ (PwQy - PyQw) E42	
+			+ (PzQx - PxQz) E31	
+			+ (PwQz - PzQw) E43	
+		//group based on T and M
+		P ^ Q =
+			+ (PwQx - PxQw) E41	//T
+			+ (PwQy - PyQw) E42	//T
+			+ (PwQz - PzQw) E43	//T
+
+			+ (PyQz - PzQy) E23	 //M
+			+ (PzQx - PxQz) E31	 //M
+			+ (PxQy - PyQx) E12	 //M
+			//group based on T and M
+		//substitute 1 into W; ie any coefficient with a Pw or Qw
+		P ^ Q =
+			+ (Qx - Px) E41	//T
+			+ (Qy - Py) E42	//T
+			+ (Qz - Pz) E43	//T
+
+			+ (PyQz - PzQy) E23	 //M
+			+ (PzQx - PxQz) E31	 //M
+			+ (PxQy - PyQx) E12	 //M
+
+	this bivector spans 2d plane in 4d
+	in subspace w=1, this is a 3d line (plane intersecting another plane gives a line between them)
+
+	decomposed into two products 
+	P wedge Q = 
+		+(Qx - Px)* e41  +(Qy - Py)* e42  +(Qz - Pz)* e43					// T = tangent vector; 		difference between 3d points q and p (ie a vector along the line between them);
+		+(PyQz - PzQy)* e23  +(PzQx - PxQz)* e31 +(PxQy - PyQx)* e12		// M = moment bivector;		cross product between p and q
+
+	no longer information about the points used to create the the line
+		note: the parameteric representation of a line (line= origin + direction*t) does have this informaiton
+
+	Moment is perpendicular to the tangent at all times
+		moment represents winding of tangent around the origin (image of a circular disk where T is spinning around M)
+
+Plucker Coordinates
+	L = {Q-P : PXQ} 	=== A line in plucker coordinates
+		the M and T of 3d lines created from point wedge point are the origin of plucker coordinates
+		the (plucker) coordinates are the coefficients of a 4D bivector (ie the result of a wedge product)
+	this demystifies a bunch of seemingly arbitrary formulas in plucker coordinates
+		plucker came up with a bunch of ways to combine this line equation to do geometric unions/intersectiosn with 4d-points and 4d-planesvectors
+
+Homogenous Planes
+	take wedge product of three 4D points
+	three point example			(w set to 1 to simplify)
+		P = (Px, Py, Pz, 1) 	= PxE1 + PyE2 + PzE3 + E4
+		Q = (Qx, Qy, Qz, 1) 	= QxE1 + QyE2 + QzE3 + E4
+		R = (Rx, Ry, Rz, 1) 	= RxE1 + RyE2 + RzE3 + E4
+	P^Q^R = Nx*e1_ + Ny*e2_ + Nz*e3_ +D*e4_
+		N is the 3d normal bivector
+		D is the offset from the origin (in units of N)
+
+		N = (P3d ^ Q3d) + (Q3d ^ R3d) +  (R3d ^ P3d)
+		D = - P3D ^ Q3d ^ R3d
+
+	Derivation (with W coordinate)
+		//end result
+			P^Q^R = Nx*e1_ + Ny*e2_ + Nz*e3_ +D*e4_
+		//use previous derivation of P^Q and wedge in R
+		P ^ Q =
+			+ (PxQy - PyQx) E12	
+			+ (PwQx - PxQw) E41	
+			+ (PyQz - PzQy) E23	
+			+ (PwQy - PyQw) E42	
+			+ (PzQx - PxQz) E31	
+			+ (PwQz - PzQw) E43	
+		//wedge in R
+		P ^ Q ^ R =
+			(
+				+ (PxQy - PyQx) E12	
+				+ (PwQx - PxQw) E41	
+				+ (PyQz - PzQy) E23	
+				+ (PwQy - PyQw) E42	
+				+ (PzQx - PxQz) E31	
+				+ (PwQz - PzQw) E43	
+			) 
+			^ (RxE1 + RyE2 + RzE3 + RwE4)
+		//distrbute additions
+		P ^ Q ^ R =
+			+ (PxQy - PyQx) E12	^ RxE1
+			+ (PwQx - PxQw) E41	^ RxE1
+			+ (PyQz - PzQy) E23	^ RxE1
+			+ (PwQy - PyQw) E42	^ RxE1
+			+ (PzQx - PxQz) E31	^ RxE1
+			+ (PwQz - PzQw) E43	^ RxE1
+
+			+ (PxQy - PyQx) E12	^ RyE2
+			+ (PwQx - PxQw) E41	^ RyE2
+			+ (PyQz - PzQy) E23	^ RyE2
+			+ (PwQy - PyQw) E42	^ RyE2
+			+ (PzQx - PxQz) E31	^ RyE2
+			+ (PwQz - PzQw) E43	^ RyE2
+
+			+ (PxQy - PyQx) E12	^ RzE3
+			+ (PwQx - PxQw) E41	^ RzE3
+			+ (PyQz - PzQy) E23	^ RzE3
+			+ (PwQy - PyQw) E42	^ RzE3
+			+ (PzQx - PxQz) E31	^ RzE3
+			+ (PwQz - PzQw) E43	^ RzE3
+
+			+ (PxQy - PyQx) E12	^ RwE4
+			+ (PwQx - PxQw) E41	^ RwE4
+			+ (PyQz - PzQy) E23	^ RwE4
+			+ (PwQy - PyQw) E42	^ RwE4
+			+ (PzQx - PxQz) E31	^ RwE4
+			+ (PwQz - PzQw) E43	^ RwE4
+		//clear out zeros from wedging together same basis vector
+		P ^ Q ^ R =
+			+ (PxQy - PyQx) E12	^ RxE1	//e1 == 0
+			+ (PwQx - PxQw) E41	^ RxE1	//e1 == 0
+			+ (PyQz - PzQy) E23	^ RxE1
+			+ (PwQy - PyQw) E42	^ RxE1
+			+ (PzQx - PxQz) E31	^ RxE1 //e1 == 0
+			+ (PwQz - PzQw) E43	^ RxE1 
+
+			+ (PxQy - PyQx) E12	^ RyE2 //e2 == 0
+			+ (PwQx - PxQw) E41	^ RyE2 
+			+ (PyQz - PzQy) E23	^ RyE2 //e2 == 0
+			+ (PwQy - PyQw) E42	^ RyE2 //e2 == 0
+			+ (PzQx - PxQz) E31	^ RyE2
+			+ (PwQz - PzQw) E43	^ RyE2
+
+			+ (PxQy - PyQx) E12	^ RzE3 
+			+ (PwQx - PxQw) E41	^ RzE3
+			+ (PyQz - PzQy) E23	^ RzE3 //e3 == 0
+			+ (PwQy - PyQw) E42	^ RzE3
+			+ (PzQx - PxQz) E31	^ RzE3 //e3 == 0
+			+ (PwQz - PzQw) E43	^ RzE3 //e3 == 0
+
+			+ (PxQy - PyQx) E12	^ RwE4
+			+ (PwQx - PxQw) E41	^ RwE4 //e4 == 0
+			+ (PyQz - PzQy) E23	^ RwE4
+			+ (PwQy - PyQw) E42	^ RwE4 //e4 == 0
+			+ (PzQx - PxQz) E31	^ RwE4
+			+ (PwQz - PzQw) E43	^ RwE4 //e4 == 0
+		// just showing after deletins before shifting things around
+		P ^ Q ^ R =
+			+ (PyQz - PzQy) E23	^ RxE1
+			+ (PwQy - PyQw) E42	^ RxE1
+			+ (PwQz - PzQw) E43	^ RxE1 
+
+			+ (PwQx - PxQw) E41	^ RyE2 
+			+ (PzQx - PxQz) E31	^ RyE2
+			+ (PwQz - PzQw) E43	^ RyE2
+
+			+ (PxQy - PyQx) E12	^ RzE3 
+			+ (PwQx - PxQw) E41	^ RzE3
+			+ (PwQy - PyQw) E42	^ RzE3
+
+			+ (PxQy - PyQx) E12	^ RwE4
+			+ (PyQz - PzQy) E23	^ RwE4
+			+ (PzQx - PxQz) E31	^ RwE4
+		// combine basis and distribute in R terms
+		P ^ Q ^ R =
+			+ (PyQz - PzQy)*Rx * E231
+			+ (PwQy - PyQw)*Rx * E421
+			+ (PwQz - PzQw)*Rx * E431 
+			+ (PwQx - PxQw)*Ry * E412 
+			+ (PzQx - PxQz)*Ry * E312
+			+ (PwQz - PzQw)*Ry * E432
+			+ (PxQy - PyQx)*Rz * E123 
+			+ (PwQx - PxQw)*Rz * E413
+			+ (PwQy - PyQw)*Rz * E423
+			+ (PxQy - PyQx)*Rw * E124
+			+ (PyQz - PzQy)*Rw * E234
+			+ (PzQx - PxQz)*Rw * E314
+		//Distribute R
+		P ^ Q ^ R =
+			+ (PyQzRx - PzQyRx) * E231
+			+ (PwQyRx - PyQwRx) * E421
+			+ (PwQzRx - PzQwRx) * E431 
+
+			+ (PwQxRy - PxQwRy) * E412 
+			+ (PzQxRy - PxQzRy) * E312
+			+ (PwQzRy - PzQwRy) * E432
+
+			+ (PxQyRz - PyQxRz) * E123 
+			+ (PwQxRz - PxQwRz) * E413
+			+ (PwQyRz - PyQwRz) * E423
+
+			+ (PxQyRw - PyQxRw) * E124
+			+ (PyQzRw - PzQyRw) * E234
+			+ (PzQxRw - PxQzRw) * E314
+		//The final form looks like this (with the w's set to 1, so slightly different)
+		// P^Q^R = Nx*e1_ + Ny*e2_ + Nz*e3_ +D*e4_
+		// these are the anti vectors e1_, e2_, e3_, e4_
+		// earlier, we were given these orderings to achieve the right complement antivectors
+		//	e1_ == e2 ^ e3 ^ e4 == e234
+		//	e2_ == e1 ^ e4 ^ e3 == e143
+		//	e3_ == e1 ^ e2 ^ e4 == e124
+		//	e4_ == e1 ^ e3 ^ e2 == e132
+		//
+		//arrange these so that they are one of those 4.
+		//every shift negates in position
+		P ^ Q ^ R =:
+			+ (PyQzRx - PzQyRx) * E231			//malformed e4_ goal(e132)	steps(231:->213->123->132)	sign-
+			+ (PwQyRx - PyQwRx) * E421  		//malformed e3_ goal(e124)  steps(421:->412->142->124)	sign-
+			+ (PwQzRx - PzQwRx) * E431  		//malformed e2_ goal(e143)	steps(431:->413->143)		sign+
+
+			+ (PwQxRy - PxQwRy) * E412  		//malformed e3_ goal(e124)	steps(412:->142->124) 		sign+
+			+ (PzQxRy - PxQzRy) * E312  		//malformed e4_ goal(e132)  steps(312:->132) 			sign-
+			+ (PwQzRy - PzQwRy) * E432  		//malformed e1_ goal(e234)  steps(432:->423->243->234) 	sign-
+
+			+ (PxQyRz - PyQxRz) * E123  		//malformed e4_ goal(e132)  steps(123:->)132)			sign-
+			+ (PwQxRz - PxQwRz) * E413			//malformed e2_ goal(e143)  steps(413:->143) 			sign-
+			+ (PwQyRz - PyQwRz) * E423  		//malformed e1_ goal(e234)  steps(423:->243->234) 		sign+
+
+			+ (PxQyRw - PyQxRw) * E124  		//good, e3_ 
+			+ (PyQzRw - PzQyRw) * E234			//good, e1_
+			+ (PzQxRw - PxQzRw) * E314  		//malformed e2_ goal(e143)  steps(314:->134->143) 		sign+
+		//correct the signs based on shifts above
+		P ^ Q ^ R =:
+			- (PyQzRx - PzQyRx) * e132
+			- (PwQyRx - PyQwRx) * e124  		
+			+ (PwQzRx - PzQwRx) * e143
+			
+			+ (PwQxRy - PxQwRy) * e124
+			- (PzQxRy - PxQzRy) * e132  		
+			- (PwQzRy - PzQwRy) * e234  		
+
+			- (PxQyRz - PyQxRz) * e132
+			- (PwQxRz - PxQwRz) * e143
+			+ (PwQyRz - PyQwRz) * e234
+
+			+ (PxQyRw - PyQxRw) * e124
+			+ (PyQzRw - PzQyRw) * e234
+			+ (PzQxRw - PxQzRw) * e143
+		//group by basis
+		P ^ Q ^ R =:
+			+ (PwQzRx - PzQwRx) * e143
+			+ (PzQxRw - PxQzRw) * e143
+			- (PwQxRz - PxQwRz) * e143
+			
+			- (PyQzRx - PzQyRx) * e132
+			- (PzQxRy - PxQzRy) * e132  		
+			- (PxQyRz - PyQxRz) * e132
+
+			+ (PwQyRz - PyQwRz) * e234
+			+ (PyQzRw - PzQyRw) * e234
+			- (PwQzRy - PzQwRy) * e234  		
+
+			+ (PwQxRy - PxQwRy) * e124
+			- (PwQyRx - PyQwRx) * e124  		
+			+ (PxQyRw - PyQxRw) * e124
+		//replace notaiton with antivectors
+		P ^ Q ^ R =:
+			+ (PwQzRx - PzQwRx) * e2_
+			+ (PzQxRw - PxQzRw) * e2_
+			- (PwQxRz - PxQwRz) * e2_
+			
+			- (PyQzRx - PzQyRx) * e4_
+			- (PzQxRy - PxQzRy) * e4_  		
+			- (PxQyRz - PyQxRz) * e4_
+
+			+ (PwQyRz - PyQwRz) * e1_
+			+ (PyQzRw - PzQyRw) * e1_
+			- (PwQzRy - PzQwRy) * e1_  		
+
+			+ (PwQxRy - PxQwRy) * e3_
+			- (PwQyRx - PyQwRx) * e3_  		
+			+ (PxQyRw - PyQxRw) * e3_
+
+		//replace Ws with 1
+		P ^ Q ^ R =:
+			+ (QzRx - PzRx) * e2_
+			+ (PzQx - PxQz) * e2_
+			- (QxRz - PxRz) * e2_
+			
+			- (PyQzRx - PzQyRx) * e4_
+			- (PzQxRy - PxQzRy) * e4_  		
+			- (PxQyRz - PyQxRz) * e4_
+
+			+ (QyRz - PyRz) * e1_
+			+ (PyQz - PzQy) * e1_
+			- (QzRy - PzRy) * e1_  		
+
+			+ (QxRy - PxRy) * e3_
+			- (QyRx - PyRx) * e3_  		
+			+ (PxQy - PyQx) * e3_
+
+		//reorder based on antivector 
+		//------ POTENTIAL ERROR HERE --------
+		//he has N = wedge3d(P,Q), wedge3d(Q,R), wedge3d(R,P);
+		// but these do not seem to corresopnd to the coefficient below.
+		// Perhaps can be rearrnaged (though this will require distributing negative and separating interior terms).
+		P ^ Q ^ R =:
+			//no x portion present, this is x component of normal
+			+ (QyRz - PyRz) * e1_
+			+ (PyQz - PzQy) * e1_
+			- (QzRy - PzRy) * e1_  		
+
+			//no y portion present, this is y component of normal
+			+ (QzRx - PzRx) * e2_
+			+ (PzQx - PxQz) * e2_
+			- (QxRz - PxRz) * e2_
+			
+			//no zcomponent present, this is z component of normal,
+			+ (QxRy - PxRy) * e3_
+			- (QyRx - PyRx) * e3_  		
+			+ (PxQy - PyQx) * e3_
+
+			//all present, this is D, which is -wedge3d(wedge3d(P, Q), R)
+			- (PyQzRx - PzQyRx) * e4_
+			- (PzQxRy - PxQzRy) * e4_  		
+			- (PxQyRz - PyQxRz) * e4_
+
+
 ---------------------------------
-PICKUP AT ~29:25
+PICKUP AT ~ 44:05
 
 
 		
