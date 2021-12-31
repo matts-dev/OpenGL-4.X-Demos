@@ -2288,7 +2288,7 @@ namespace ray_tri_ns
 	void Slide_ProjectionOnAxesGrid::handleVisualVectorUpdated(const ClickableVisualVector& updatedVec)
 	{
 		if (projectionAnim_x && projectionAnim_y && projectionAnim_z
-			&& projectionAnim_x->isAnimating() && projectionAnim_y->isAnimating() && projectionAnim_z->isAnimating()
+			&& projectionAnim_x->shouldRender() && projectionAnim_y->shouldRender() && projectionAnim_z->shouldRender()
 			)
 		{
 			projectionAnim_x->projectFromAtoB(*vectorToProject, *x_basis, false);
@@ -3023,7 +3023,7 @@ namespace ray_tri_ns
 
 		if (bShouldRender)
 		{
-			if (!projAnim.isAnimating() || bTestPointUpdated)
+			if (!projAnim.shouldRender() || bTestPointUpdated)
 			{
 				projAnim.setColor(vec3(1.f, 1.f, 0.f));
 				projAnim.projectFromAtoB(aVec, bVec, aStart, bStart, !bTestPointUpdated);//only reset anim if test point wasn't updated
@@ -3675,7 +3675,7 @@ namespace ray_tri_ns
 
 		if (bShouldRender)
 		{
-			if (!projAnim.isAnimating() || bForceUpdate)
+			if (!projAnim.shouldRender() || bForceUpdate)
 			{
 				projAnim.projectFromAtoB(aVec, bVec, aStart, bStart, bResetAnim);//only reset anim if test point wasn't updated
 				projAnim.tick(td.dt_sec * 0.0001f);
@@ -3801,8 +3801,8 @@ static void true_main()
 	anim.start();
 }
 
-//
-//int main()
-//{
-//	true_main();
-//}
+
+int main()
+{
+	true_main();
+}

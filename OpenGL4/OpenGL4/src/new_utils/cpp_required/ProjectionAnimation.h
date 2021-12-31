@@ -40,7 +40,7 @@ namespace nho
 		void pauseAnimation();
 		void resumeAnimation();
 		bool isAnimationDone() const;
-		bool isAnimating() const { return bRender; }
+		bool shouldRender() const { return bRender; }
 	protected:
 		virtual void postConstruct() override;
 	public: //controls for ui tweaking
